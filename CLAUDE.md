@@ -67,3 +67,7 @@
 ---
 
 **如果这些指南生效了，你应该能看到：** diff 中无关改动更少、因过度设计导致的返工更少，而且提问会发生在实现之前，而不是出错之后。
+
+## LLMs
+
+- 阅读 https://ant.design/llms-full.txt 并理解 Ant Design 组件库，在编写 Ant Design 代码时使用这些知识。

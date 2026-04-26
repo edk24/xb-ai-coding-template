@@ -5,6 +5,7 @@ declare(strict_types=1);
 use app\controller\admin\AdminUserController;
 use app\controller\admin\AttachmentController;
 use app\controller\admin\AuthController;
+use app\controller\admin\ConfigItemController;
 use app\controller\admin\DepartmentController;
 use app\controller\admin\MetaController;
 use app\controller\admin\PermissionController;
@@ -50,6 +51,12 @@ Route::group('admin-api', function () {
         Route::post('permissions', [PermissionController::class, 'create']);
         Route::put('permissions/:id', [PermissionController::class, 'update']);
         Route::delete('permissions/:id', [PermissionController::class, 'delete']);
+
+        Route::get('config/items', [MetaController::class, 'configItems']);
+        Route::post('config/items', [ConfigItemController::class, 'create']);
+        Route::put('config/items/batch-save', [ConfigItemController::class, 'batchSave']);
+        Route::put('config/items/:id', [ConfigItemController::class, 'update']);
+        Route::delete('config/items/:id', [ConfigItemController::class, 'delete']);
 
         Route::get('login-logs', [MetaController::class, 'loginLogs']);
         Route::get('operation-logs', [MetaController::class, 'operationLogs']);

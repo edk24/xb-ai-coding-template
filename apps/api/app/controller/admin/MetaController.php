@@ -97,6 +97,17 @@ class MetaController extends BaseController
         return json_success($this->buildTree($rows));
     }
 
+    public function configItems()
+    {
+        $groupName = trim((string) request()->param('group_name', ''));
+        $query = Db::name('config_items')->order('sort asc,id asc');
+        if ($groupName !== '') {
+            $query->where('group_name', $groupName);
+        }
+        $rows = $query->select()->toArray();
+        return json_success($rows);
+    }
+
     public function loginLogs()
     {
         $rows = Db::name('login_logs')->order('id desc')->limit(50)->select()->toArray();

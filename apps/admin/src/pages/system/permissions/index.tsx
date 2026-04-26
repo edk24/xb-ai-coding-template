@@ -46,7 +46,6 @@ export default function Permissions() {
       route_path: record.route_path,
       component_path: record.component_path,
       permission_key: record.permission_key,
-      icon: record.icon,
       sort: record.sort,
       hidden: record.hidden,
       status: record.status,
@@ -67,7 +66,6 @@ export default function Permissions() {
         route_path: values.type === 'menu' ? (values.route_path || '') : '',
         component_path: values.type === 'menu' ? (values.component_path || '') : '',
         permission_key: values.permission_key,
-        icon: values.icon || '',
         sort: values.sort ?? 0,
         hidden: values.hidden,
         status: values.status,
@@ -216,7 +214,6 @@ export default function Permissions() {
               <Form.Item name="component_path" label="组件路径"><Input placeholder="system/xxx" /></Form.Item>
             </>
           )}
-          <Form.Item name="icon" label="图标"><Input placeholder="SettingOutlined" /></Form.Item>
           <Form.Item name="sort" label="排序值"><InputNumber min={0} style={{ width: '100%' }} /></Form.Item>
           <Form.Item name="remark" label="备注"><Input.TextArea rows={2} /></Form.Item>
           <Form.Item name="hidden" label="是否隐藏">

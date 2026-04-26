@@ -11,16 +11,30 @@ class StorageService
      */
     public function getStorageType(): string
     {
+        $dbDriver = \config_get('storage_driver');
+        if ($dbDriver && in_array((string) $dbDriver, ['local', 'cos', 'oss'], true)) {
+            return (string) $dbDriver;
+        }
         return (string) config('storage.default', 'local');
     }
 
     /**
-     * 获取存储配置
+     * 获取存储配置（优先读取系统配置项，兼容 env/config 文件默认值）
      */
     public function getConfig(string $type = null): array
     {
         $type = $type ?? $this->getStorageType();
-        return config('storage.disks.' . $type, []);
+        $config = config('storage.disks.' . $type, []);
+
+        // 从 DB 系统配置项中读取覆盖值（非空时覆盖文件配置）
+        foreach ($config as $key => $default) {
+            $dbValue = \config_get($type . '_' . $key);
+            if ($dbValue !== null && $dbValue !== '') {
+                $config[$key] = $dbValue;
+            }
+        }
+
+        return $config;
     }
 
     /**

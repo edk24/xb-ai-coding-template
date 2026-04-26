@@ -23,7 +23,6 @@ export interface CreatePermissionParams {
   route_path?: string
   component_path?: string
   permission_key: string
-  icon?: string
   sort?: number
   hidden?: number
   status: number

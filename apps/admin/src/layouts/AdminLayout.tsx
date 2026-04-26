@@ -37,6 +37,7 @@ const breadcrumbMap: Record<string, string> = {
   '/system/roles': '角色管理',
   '/system/departments': '部门管理',
   '/system/permissions': '菜单权限',
+  '/system/config': '系统配置',
   '/logs/login': '登录日志',
   '/logs/operation': '操作日志',
   '/attachments': '附件中心',

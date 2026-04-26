@@ -110,6 +110,25 @@ CREATE TABLE IF NOT EXISTS login_logs (
   login_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS config_items (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  group_name VARCHAR(100) NOT NULL DEFAULT '',
+  `key` VARCHAR(120) NOT NULL,
+  value TEXT,
+  type VARCHAR(30) NOT NULL DEFAULT 'input',
+  options TEXT COMMENT 'JSON, for select/radio/checkbox',
+  sort INT NOT NULL DEFAULT 0,
+  status TINYINT NOT NULL DEFAULT 1,
+  remark VARCHAR(255) DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by BIGINT UNSIGNED DEFAULT NULL,
+  updated_by BIGINT UNSIGNED DEFAULT NULL,
+  UNIQUE KEY uk_config_items_key (`key`),
+  INDEX idx_group_name (group_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS operation_logs (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   admin_user_id BIGINT UNSIGNED DEFAULT NULL,
@@ -151,7 +170,11 @@ VALUES
   (16, 14, '操作日志', 'menu', '/logs/operation', 'logs/operation', 'operation-logs:view', '', 2, 0, 1, ''),
   (17, 0, '附件中心', 'menu', '/attachments', 'attachments', 'attachments:view', 'PaperClipOutlined', 5, 0, 1, ''),
   (18, 17, '上传附件', 'button', '', '', 'attachments:upload', '', 1, 0, 1, ''),
-  (19, 17, '删除附件', 'button', '', '', 'attachments:delete', '', 2, 0, 1, '')
+  (19, 17, '删除附件', 'button', '', '', 'attachments:delete', '', 2, 0, 1, ''),
+  (20, 2, '系统配置', 'menu', '/system/config', 'system/config', 'config:view', '', 5, 0, 1, ''),
+  (21, 20, '新增配置', 'button', '', '', 'config:create', '', 1, 0, 1, ''),
+  (22, 20, '编辑配置', 'button', '', '', 'config:update', '', 2, 0, 1, ''),
+  (23, 20, '删除配置', 'button', '', '', 'config:delete', '', 3, 0, 1, '')
 ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon);
 
 INSERT INTO admin_users (
@@ -168,3 +191,25 @@ ON DUPLICATE KEY UPDATE role_id = VALUES(role_id);
 INSERT INTO role_permissions (role_id, permission_id)
 SELECT 1, id FROM permissions
 ON DUPLICATE KEY UPDATE permission_id = VALUES(permission_id);
+
+INSERT INTO config_items (name, group_name, `key`, value, type, options, sort, status, remark)
+VALUES
+  ('存储驱动', '存储', 'storage_driver', 'local', 'select', '[{"label":"本地","value":"local"},{"label":"腾讯云COS","value":"cos"},{"label":"阿里云OSS","value":"oss"}]', 1, 1, '附件存储方式'),
+  ('COS 地域', '存储', 'cos_region', '', 'input', '', 10, 1, ''),
+  ('COS 存储桶', '存储', 'cos_bucket', '', 'input', '', 11, 1, ''),
+  ('COS SecretId', '存储', 'cos_secret_id', '', 'input', '', 12, 1, ''),
+  ('COS SecretKey', '存储', 'cos_secret_key', '', 'input', '', 13, 1, ''),
+  ('COS AppId', '存储', 'cos_app_id', '', 'input', '', 14, 1, ''),
+  ('COS CDN 加速域名', '存储', 'cos_cdn_url', '', 'input', '', 15, 1, ''),
+  ('COS 允许上传前缀', '存储', 'cos_allow_prefix', 'uploads', 'input', '', 16, 1, ''),
+  ('COS 临时密钥有效期', '存储', 'cos_duration', '1800', 'number', '', 17, 1, '单位：秒'),
+  ('OSS 地域', '存储', 'oss_region', '', 'input', '', 20, 1, ''),
+  ('OSS 存储桶', '存储', 'oss_bucket', '', 'input', '', 21, 1, ''),
+  ('OSS AccessKeyId', '存储', 'oss_access_key_id', '', 'input', '', 22, 1, ''),
+  ('OSS AccessKeySecret', '存储', 'oss_access_key_secret', '', 'input', '', 23, 1, ''),
+  ('OSS RoleArn', '存储', 'oss_role_arn', '', 'input', '', 24, 1, ''),
+  ('OSS Endpoint', '存储', 'oss_endpoint', '', 'input', '', 25, 1, ''),
+  ('OSS CDN 加速域名', '存储', 'oss_cdn_url', '', 'input', '', 26, 1, ''),
+  ('OSS 允许上传前缀', '存储', 'oss_allow_prefix', 'uploads', 'input', '', 27, 1, ''),
+  ('OSS 临时密钥有效期', '存储', 'oss_duration', '1800', 'number', '', 28, 1, '单位：秒')
+ON DUPLICATE KEY UPDATE name = VALUES(name), group_name = VALUES(group_name), type = VALUES(type), options = VALUES(options), sort = VALUES(sort), status = VALUES(status), remark = VALUES(remark);
