@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Form, Input, Button, Card, Typography, message } from 'antd'
+import { Form, Input, Button, Card, Typography, App } from 'antd'
 import { useAuthStore } from '../../store/auth'
 import { updateProfileApi, profileApi } from '../../api/auth'
 
@@ -17,6 +17,7 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
+  const { message } = App.useApp()
 
   useEffect(() => {
     setLoading(true)

@@ -11,6 +11,7 @@ import Departments from '../pages/system/departments'
 import Permissions from '../pages/system/permissions'
 import LoginLogs from '../pages/logs/login'
 import OperationLogs from '../pages/logs/operation'
+import Attachments from '../pages/attachments'
 
 export default function AppRouter() {
   return (
@@ -34,6 +35,7 @@ export default function AppRouter() {
         <Route path="system/permissions" element={<Permissions />} />
         <Route path="logs/login" element={<LoginLogs />} />
         <Route path="logs/operation" element={<OperationLogs />} />
+        <Route path="attachments" element={<Attachments />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

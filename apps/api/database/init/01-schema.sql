@@ -85,6 +85,20 @@ CREATE TABLE IF NOT EXISTS role_permissions (
   UNIQUE KEY uk_role_permission (role_id, permission_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS attachments (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  admin_user_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  size BIGINT UNSIGNED NOT NULL,
+  mime_type VARCHAR(127) DEFAULT '',
+  storage_type VARCHAR(20) NOT NULL DEFAULT 'local',
+  path VARCHAR(500) NOT NULL,
+  url VARCHAR(500) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user (admin_user_id),
+  INDEX idx_type (storage_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS login_logs (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   admin_user_id BIGINT UNSIGNED DEFAULT NULL,
@@ -134,7 +148,10 @@ VALUES
   (13, 11, '修改密码', 'menu', '/profile/password', 'profile/password', 'profile:password', '', 2, 0, 1, ''),
   (14, 0, '日志审计', 'catalog', '/logs', '', 'logs', 'FileTextOutlined', 4, 0, 1, ''),
   (15, 14, '登录日志', 'menu', '/logs/login', 'logs/login', 'login-logs:view', '', 1, 0, 1, ''),
-  (16, 14, '操作日志', 'menu', '/logs/operation', 'logs/operation', 'operation-logs:view', '', 2, 0, 1, '')
+  (16, 14, '操作日志', 'menu', '/logs/operation', 'logs/operation', 'operation-logs:view', '', 2, 0, 1, ''),
+  (17, 0, '附件中心', 'menu', '/attachments', 'attachments', 'attachments:view', 'PaperClipOutlined', 5, 0, 1, ''),
+  (18, 17, '上传附件', 'button', '', '', 'attachments:upload', '', 1, 0, 1, ''),
+  (19, 17, '删除附件', 'button', '', '', 'attachments:delete', '', 2, 0, 1, '')
 ON DUPLICATE KEY UPDATE name = VALUES(name), icon = VALUES(icon);
 
 INSERT INTO admin_users (

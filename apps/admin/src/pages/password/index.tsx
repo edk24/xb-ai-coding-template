@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, message, Modal } from 'antd'
+import { Form, Input, Button, Card, Modal, App } from 'antd'
 import { updatePasswordApi } from '../../api/auth'
 import { useAuthStore } from '../../store/auth'
 
@@ -15,6 +15,7 @@ export default function Password() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
   const logout = useAuthStore((s) => s.logout)
+  const { message } = App.useApp()
 
   const onFinish = async (values: PasswordForm) => {
     setLoading(true)

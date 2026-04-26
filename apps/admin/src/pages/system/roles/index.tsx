@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Table, Button, Drawer, Form, Input, Tree, Select,
-  Popconfirm, message, Tag, Space, Card,
+  Popconfirm, Tag, Space, Card, App,
 } from 'antd'
 import { PlusOutlined } from '@ant-design/icons'
 import type { TreeProps } from 'antd'
@@ -19,6 +19,7 @@ export default function Roles() {
   const [saving, setSaving] = useState(false)
   const [checkedKeys, setCheckedKeys] = useState<number[]>([])
   const [form] = Form.useForm()
+  const { message } = App.useApp()
 
   const loadList = () => {
     setLoading(true)

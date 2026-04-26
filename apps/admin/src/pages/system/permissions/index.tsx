@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import {
-  Card, Tree, Button, Drawer, Form, Input, InputNumber, TreeSelect, Select,
-  Popconfirm, message, Space, Tag,
+  Card, Table, Button, Drawer, Form, Input, InputNumber, TreeSelect, Select,
+  Popconfirm, Space, Tag, App,
 } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import type { DataNode } from 'antd/es/tree'
 import { getPermissionsTreeApi, createPermissionApi, updatePermissionApi, deletePermissionApi } from '../../../api/permissions'
 import type { Permission, CreatePermissionParams } from '../../../api/permissions'
 
@@ -21,6 +21,7 @@ export default function Permissions() {
   const [saving, setSaving] = useState(false)
   const [typeValue, setTypeValue] = useState<string>('menu')
   const [form] = Form.useForm()
+  const { message } = App.useApp()
 
   const loadTree = () => {
     getPermissionsTreeApi().then((res) => setTreeData(res.data.data))
@@ -101,37 +102,84 @@ export default function Permissions() {
       ]
     })
 
-  const buildAntTree = (items: Permission[]): DataNode[] =>
-    items.map((item) => ({
-      key: String(item.id),
-      title: (
+  const columns: ColumnsType<Permission> = [
+    {
+      title: '名称',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string, record: Permission) => (
         <Space>
-          <span>{item.name}</span>
-          <Tag color={TYPE_MAP[item.type]?.color}>{TYPE_MAP[item.type]?.label || item.type}</Tag>
-          {item.hidden === 1 && <Tag>隐藏</Tag>}
-          <Space size={4}>
-            <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => openCreate(item.id)} />
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(item)} />
-            {item.id > 16 && (
-              <Popconfirm title="确定删除？" onConfirm={() => handleDelete(item.id)}>
-                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
-            )}
-          </Space>
+          <span>{text}</span>
+          {record.hidden === 1 && <Tag>隐藏</Tag>}
         </Space>
       ),
-      children: item.children ? buildAntTree(item.children) : undefined,
-    }))
+    },
+    {
+      title: '类型',
+      dataIndex: 'type',
+      key: 'type',
+      width: 100,
+      render: (type: string) => (
+        <Tag color={TYPE_MAP[type]?.color}>{TYPE_MAP[type]?.label || type}</Tag>
+      ),
+    },
+    {
+      title: '权限标识',
+      dataIndex: 'permission_key',
+      key: 'permission_key',
+      width: 200,
+    },
+    {
+      title: '路由路径',
+      dataIndex: 'route_path',
+      key: 'route_path',
+      render: (text: string) => (text ? <code>{text}</code> : '-'),
+    },
+    {
+      title: '排序',
+      dataIndex: 'sort',
+      key: 'sort',
+      width: 80,
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 80,
+      render: (status: number) => (
+        <Tag color={status === 1 ? 'green' : 'red'}>{status === 1 ? '启用' : '禁用'}</Tag>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 220,
+      render: (_: unknown, record: Permission) => (
+        <Space size={4}>
+          <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => openCreate(record.id)} />
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+          {record.id > 16 && (
+            <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          )}
+        </Space>
+      ),
+    },
+  ]
 
   return (
     <Card
       title="菜单权限"
       extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate(0)}>新增</Button>}
     >
-      <Tree
-        treeData={buildAntTree(treeData)}
-        defaultExpandAll
-        style={{ background: 'transparent' }}
+      <Table
+        columns={columns}
+        dataSource={treeData}
+        rowKey="id"
+        defaultExpandAllRows
+        pagination={false}
+        size="middle"
       />
       <Drawer
         title={editingId ? '编辑权限' : '新增权限'}

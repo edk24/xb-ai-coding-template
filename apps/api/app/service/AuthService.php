@@ -16,17 +16,17 @@ class AuthService
 
         if (!$user) {
             $this->recordLoginLog(null, $username, $ip, $userAgent, 0, '账号不存在');
-            api_abort('账号或密码错误', 401);
+            api_abort('账号或密码错误');
         }
 
         if ((int) $user->status !== 1) {
             $this->recordLoginLog((int) $user->id, $username, $ip, $userAgent, 0, '账号已禁用');
-            api_abort('账号已禁用', 403);
+            api_abort('账号或密码错误');
         }
 
         if (admin_password_hash($password, (string) $user->salt) !== $user->password_hash) {
             $this->recordLoginLog((int) $user->id, $username, $ip, $userAgent, 0, '密码错误');
-            api_abort('账号或密码错误', 401);
+            api_abort('账号或密码错误');
         }
 
         $token = create_admin_token($user);

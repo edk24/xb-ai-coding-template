@@ -32,7 +32,7 @@ function api_abort(string $message, int $code = 1, mixed $data = null): never
 
 function admin_password_hash(string $password, string $salt): string
 {
-    return md5(md5($password) . $salt);
+    return md5($password . $salt);
 }
 
 function jwt_secret(): string

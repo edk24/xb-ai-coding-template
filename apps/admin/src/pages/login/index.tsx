@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, Typography, message } from 'antd'
+import { Form, Input, Button, Card, Typography, App } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import type { AxiosError } from 'axios'
 import { loginApi } from '../../api/auth'
 import { useAuthStore } from '../../store/auth'
+import { useThemeStore } from '../../store/theme'
+import { messageError } from '../../utils/global-message'
 
 const { Title } = Typography
 
@@ -18,11 +20,32 @@ export default function Login() {
   const navigate = useNavigate()
   const setToken = useAuthStore((s) => s.setToken)
   const setUser = useAuthStore((s) => s.setUser)
+  const mode = useThemeStore((s) => s.mode)
+  const { message } = App.useApp()
+
+  // 展示因 401 被重定向到登录页的原因
+  useEffect(() => {
+    const redirect = sessionStorage.getItem('auth_redirect')
+    if (redirect === '401') {
+      const authMsg = sessionStorage.getItem('auth_message')
+      message.warning(authMsg || '登录状态已过期，请重新登录')
+    }
+    sessionStorage.removeItem('auth_redirect')
+    sessionStorage.removeItem('auth_message')
+  }, [message])
+
+  const handleError = (msg: string) => {
+    messageError(msg)
+  }
 
   const onFinish = async (values: LoginForm) => {
     setLoading(true)
     try {
       const res = await loginApi(values)
+      if (res.data.code !== 0) {
+        handleError(res.data.message || '登录失败，请检查账号密码')
+        return
+      }
       const { token, user } = res.data.data
       setToken(token)
       setUser(user)
@@ -31,7 +54,7 @@ export default function Login() {
     } catch (err) {
       const axiosErr = err as AxiosError<{ message: string }>
       const msg = axiosErr.response?.data?.message || '登录失败，请检查账号密码'
-      message.error(msg)
+      handleError(msg)
     } finally {
       setLoading(false)
     }
@@ -44,7 +67,7 @@ export default function Login() {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        background: '#141414',
+        background: mode === 'dark' ? '#141414' : '#f5f5f5',
       }}
     >
       <Card style={{ width: 400 }}>

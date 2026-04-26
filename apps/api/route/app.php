@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use app\controller\admin\AdminUserController;
+use app\controller\admin\AttachmentController;
 use app\controller\admin\AuthController;
 use app\controller\admin\DepartmentController;
 use app\controller\admin\MetaController;
@@ -52,5 +53,12 @@ Route::group('admin-api', function () {
 
         Route::get('login-logs', [MetaController::class, 'loginLogs']);
         Route::get('operation-logs', [MetaController::class, 'operationLogs']);
+
+        Route::get('attachments/config', [AttachmentController::class, 'config']);
+        Route::get('attachments', [AttachmentController::class, 'index']);
+        Route::post('attachments/upload', [AttachmentController::class, 'upload']);
+        Route::post('attachments/credentials', [AttachmentController::class, 'credentials']);
+        Route::post('attachments/record', [AttachmentController::class, 'record']);
+        Route::delete('attachments/:id', [AttachmentController::class, 'delete']);
     })->middleware('admin.auth');
 });

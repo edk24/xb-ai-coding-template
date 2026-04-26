@@ -1,4 +1,5 @@
 import client from './client'
+import { hashPassword } from '../utils/password'
 
 export interface AdminUser {
   id: number
@@ -51,7 +52,7 @@ export function getAdminUsersApi() {
 export function createAdminUserApi(params: CreateAdminUserParams) {
   return client.post<{ code: number; message: string; data: AdminUser }>(
     '/admin-users',
-    params,
+    { ...params, password: hashPassword(params.password) },
   )
 }
 
@@ -75,6 +76,6 @@ export interface ResetPasswordParams {
 export function resetPasswordApi(id: number, params?: ResetPasswordParams) {
   return client.put<{ code: number; message: string; data: { new_password: string } }>(
     `/admin-users/${id}/reset-password`,
-    params || {},
+    params?.new_password ? { new_password: hashPassword(params.new_password) } : {},
   )
 }

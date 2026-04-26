@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Table, Button, Drawer, Form, Input, Select, TreeSelect,
-  Switch, Modal, Popconfirm, message, Tag, Avatar, Space, Card,
+  Switch, Modal, Popconfirm, Tag, Avatar, Space, Card, App,
 } from 'antd'
 import { PlusOutlined, UserOutlined } from '@ant-design/icons'
 import {
@@ -23,6 +23,7 @@ export default function AdminUsers() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const { message } = App.useApp()
 
   const loadList = () => {
     setLoading(true)

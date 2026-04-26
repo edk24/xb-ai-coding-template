@@ -1,4 +1,5 @@
 import client from './client'
+import { hashPassword } from '../utils/password'
 
 export interface LoginParams {
   username: string
@@ -28,7 +29,7 @@ export interface LoginResult {
 export function loginApi(params: LoginParams) {
   return client.post<{ code: number; message: string; data: LoginResult }>(
     '/auth/login',
-    params,
+    { ...params, password: hashPassword(params.password) },
   )
 }
 
@@ -62,7 +63,11 @@ export function updateProfileApi(params: UpdateProfileParams) {
 export function updatePasswordApi(params: UpdatePasswordParams) {
   return client.put<{ code: number; message: string }>(
     '/auth/password',
-    params,
+    {
+      old_password: hashPassword(params.old_password),
+      new_password: hashPassword(params.new_password),
+      confirm_password: hashPassword(params.confirm_password),
+    },
   )
 }
 

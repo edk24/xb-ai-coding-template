@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, Outlet, useLocation } from 'react-router-dom'
-import { Layout, Menu, Dropdown, Avatar, Typography, Modal, Breadcrumb } from 'antd'
+import { Layout, Menu, Dropdown, Avatar, Typography, Modal, Breadcrumb, Button } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   UserOutlined, LogoutOutlined, TeamOutlined, SafetyCertificateOutlined,
   ApartmentOutlined, KeyOutlined, DashboardOutlined, FileTextOutlined,
+  SunOutlined, MoonOutlined, PaperClipOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../store/auth'
+import { useThemeStore } from '../store/theme'
 import { logoutApi } from '../api/auth'
 import { getPermissionsTreeApi } from '../api/permissions'
 import type { Permission } from '../api/permissions'
@@ -24,6 +26,7 @@ const iconMap: Record<string, React.ReactNode> = {
   ApartmentOutlined: <ApartmentOutlined />,
   KeyOutlined: <KeyOutlined />,
   FileTextOutlined: <FileTextOutlined />,
+  PaperClipOutlined: <PaperClipOutlined />,
   LogoutOutlined: <LogoutOutlined />,
 }
 
@@ -36,11 +39,13 @@ const breadcrumbMap: Record<string, string> = {
   '/system/permissions': '菜单权限',
   '/logs/login': '登录日志',
   '/logs/operation': '操作日志',
+  '/attachments': '附件中心',
   '/profile/basic': '个人资料',
   '/profile/password': '修改密码',
 }
 
-function buildMenuItems(items: Permission[]): MenuProps['items'] {
+function buildMenuItems(items: Permission[] | null): MenuProps['items'] {
+  if (!items) return []
   return items
     .filter((item) => item.type !== 'button' && item.status === 1 && item.permission_key !== 'profile')
     .map((item) => {
@@ -60,6 +65,7 @@ export default function AdminLayout() {
   const location = useLocation()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
+  const { mode, toggle: toggleTheme } = useThemeStore()
   const [menuItems, setMenuItems] = useState<MenuProps['items']>([])
   const [collapsed, setCollapsed] = useState(false)
 
@@ -78,6 +84,8 @@ export default function AdminLayout() {
       items.push({ title: '日志审计' })
     } else if (path.startsWith('/profile')) {
       items.push({ title: '个人中心' })
+    } else if (path.startsWith('/attachments')) {
+      items.push({ title: '附件中心' })
     }
     const currentTitle = breadcrumbMap[path]
     if (currentTitle) {
@@ -142,17 +150,24 @@ export default function AdminLayout() {
       <Layout>
         <Header
           style={{
-            background: '#1f1f1f',
+            background: mode === 'dark' ? '#1f1f1f' : '#fff',
             padding: '0 24px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'flex-end',
+            justifyContent: 'space-between',
+            borderBottom: mode === 'dark' ? 'none' : '1px solid #f0f0f0',
           }}
         >
+          <Button
+            type="text"
+            icon={mode === 'dark' ? <SunOutlined /> : <MoonOutlined />}
+            onClick={toggleTheme}
+            style={{ color: mode === 'dark' ? '#fff' : undefined }}
+          />
           <Dropdown menu={{ items: userMenuItems, onClick: onUserMenuClick }} placement="bottomRight">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <Avatar size={32} icon={<UserOutlined />} />
-              <Text style={{ color: '#fff' }}>{user?.nickname || user?.username}</Text>
+              <Text style={{ color: mode === 'dark' ? '#fff' : undefined }}>{user?.nickname || user?.username}</Text>
             </div>
           </Dropdown>
         </Header>

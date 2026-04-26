@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
-  Card, Tree, Button, Drawer, Form, Input, InputNumber, TreeSelect,
-  Popconfirm, message, Space, Tag,
+  Card, Table, Button, Drawer, Form, Input, InputNumber, TreeSelect,
+  Popconfirm, Space, Tag, App,
 } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import type { DataNode } from 'antd/es/tree'
 import { getDepartmentsTreeApi, createDepartmentApi, updateDepartmentApi, deleteDepartmentApi } from '../../../api/departments'
 import type { Department, CreateDepartmentParams } from '../../../api/departments'
 
@@ -14,6 +14,7 @@ export default function Departments() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
+  const { message } = App.useApp()
 
   const loadTree = useCallback(() => {
     getDepartmentsTreeApi().then((res) => setTreeData(res.data.data))
@@ -85,37 +86,68 @@ export default function Departments() {
       ]
     })
 
-  // Build Ant Design Tree nodes with action buttons
-  const buildAntTree = (items: Department[]): DataNode[] =>
-    items.map((item) => ({
-      key: String(item.id),
-      title: (
-        <Space>
-          <span>{item.name}</span>
-          {item.status === 0 && <Tag color="red">禁用</Tag>}
-          <Space size={4}>
-            <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => openCreate(item.id)} />
-            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(item)} />
-            {item.id !== 1 && (
-              <Popconfirm title="确定删除？子部门和管理员将被校验" onConfirm={() => handleDelete(item.id)}>
-                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-              </Popconfirm>
-            )}
-          </Space>
+  const columns: ColumnsType<Department> = [
+    {
+      title: '部门名称',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text: string) => <span style={{ fontWeight: 500 }}>{text}</span>,
+    },
+    {
+      title: '负责人',
+      dataIndex: 'leader',
+      key: 'leader',
+    },
+    {
+      title: '联系电话',
+      dataIndex: 'phone',
+      key: 'phone',
+    },
+    {
+      title: '排序',
+      dataIndex: 'sort',
+      key: 'sort',
+      width: 80,
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 80,
+      render: (status: number) => (
+        <Tag color={status === 1 ? 'green' : 'red'}>{status === 1 ? '启用' : '禁用'}</Tag>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 220,
+      render: (_: unknown, record: Department) => (
+        <Space size={4}>
+          <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => openCreate(record.id)} />
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+          {record.id !== 1 && (
+            <Popconfirm title="确定删除？子部门和管理员将被校验" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          )}
         </Space>
       ),
-      children: item.children ? buildAntTree(item.children) : undefined,
-    }))
+    },
+  ]
 
   return (
     <Card
       title="部门管理"
       extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate(0)}>新增根部门</Button>}
     >
-      <Tree
-        treeData={buildAntTree(treeData)}
-        defaultExpandAll
-        style={{ background: 'transparent' }}
+      <Table
+        columns={columns}
+        dataSource={treeData}
+        rowKey="id"
+        defaultExpandAllRows
+        pagination={false}
+        size="middle"
       />
       <Drawer
         title={editingId ? '编辑部门' : '新增部门'}

@@ -6,3 +6,4 @@ apps/admin/node_modules
 apps/api/vendor
 apps/api/runtime
 apps/api/.env
+apps/api/public/storage/*
