@@ -1,0 +1,8 @@
+node_modules
+.pnpm-store
+.DS_Store
+apps/admin/dist
+apps/admin/node_modules
+apps/api/vendor
+apps/api/runtime
+apps/api/.env

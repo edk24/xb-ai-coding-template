@@ -1,0 +1,35 @@
+services:
+  api:
+    build:
+      context: ./apps/api
+    working_dir: /app
+    volumes:
+      - ./apps/api:/app
+    command: sh -c "php -S 0.0.0.0:8000 -t public"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: admin_system
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./apps/api/database/init:/docker-entrypoint-initdb.d
+
+  composer:
+    image: composer:latest
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+
+volumes:
+  mysql_data:
