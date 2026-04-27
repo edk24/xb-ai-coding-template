@@ -5,6 +5,7 @@ export interface Role {
   name: string
   code: string
   status: number
+  data_scope: number
   remark: string
   created_at: string
   updated_at: string
@@ -15,6 +16,7 @@ export interface CreateRoleParams {
   name: string
   code: string
   status: number
+  data_scope: number
   remark?: string
   permission_ids: number[]
 }

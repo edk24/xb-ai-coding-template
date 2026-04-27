@@ -6,6 +6,7 @@ namespace app\controller\admin;
 
 use app\BaseController;
 use app\service\AuthService;
+use app\service\DataScopeService;
 use app\service\StorageService;
 use think\Request;
 use think\facade\Db;
@@ -30,10 +31,26 @@ class AttachmentController extends BaseController
         $pageSize = min(100, max(1, (int) $request->get('page_size', 20)));
         $storageType = (string) $request->get('storage_type', '');
 
-        $query = Db::name('attachments')->order('id desc');
+        $query = Db::name('attachments')
+            ->alias('a')
+            ->leftJoin('admin_users u', 'u.id = a.admin_user_id')
+            ->field('a.*')
+            ->order('a.id desc');
 
         if ($storageType !== '' && in_array($storageType, ['local', 'cos', 'oss'])) {
-            $query->where('storage_type', $storageType);
+            $query->where('a.storage_type', $storageType);
+        }
+
+        $dataScopeService = new DataScopeService();
+        $scope = $dataScopeService->getEffectiveScope();
+        if ($scope === 1) {
+            $user = current_admin_user();
+            $query->where('a.admin_user_id', $user ? (int) $user->id : 0);
+        } elseif ($scope === 2 || $scope === 3) {
+            $deptIds = $dataScopeService->getVisibleDeptIds();
+            if (!empty($deptIds)) {
+                $query->whereIn('u.department_id', $deptIds);
+            }
         }
 
         $total = $query->count();

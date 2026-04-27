@@ -26,6 +26,7 @@ class RoleController extends BaseController
                 'name' => $payload['name'],
                 'code' => $payload['code'],
                 'status' => (int) $payload['status'],
+                'data_scope' => $payload['data_scope'],
                 'remark' => $payload['remark'],
                 'created_by' => (int) $operator->id,
                 'updated_by' => (int) $operator->id,
@@ -67,6 +68,7 @@ class RoleController extends BaseController
                 'name' => $payload['name'],
                 'code' => $payload['code'],
                 'status' => (int) $payload['status'],
+                'data_scope' => $payload['data_scope'],
                 'remark' => $payload['remark'],
                 'updated_by' => (int) $operator->id,
                 'updated_at' => date('Y-m-d H:i:s'),
@@ -115,6 +117,7 @@ class RoleController extends BaseController
             'name' => trim((string) $request->param('name', '')),
             'code' => trim((string) $request->param('code', '')),
             'status' => (string) ((int) $request->param('status', 1)),
+            'data_scope' => (int) $request->param('data_scope', 2),
             'remark' => trim((string) $request->param('remark', '')),
             'permission_ids' => (array) ($request->param('permission_ids') ?? []),
         ];
@@ -126,6 +129,7 @@ class RoleController extends BaseController
             'name' => 'require|max:100',
             'code' => 'require|max:100',
             'status' => 'require|in:0,1',
+            'data_scope' => 'require|in:1,2,3,4',
             'remark' => 'max:255',
         ]);
     }

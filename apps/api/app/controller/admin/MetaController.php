@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace app\controller\admin;
 
 use app\BaseController;
+use app\service\DataScopeService;
 use think\facade\Db;
 
 class MetaController extends BaseController
@@ -50,13 +51,25 @@ class MetaController extends BaseController
 
     public function adminUsers()
     {
-        $rows = Db::name('admin_users')
+        $query = Db::name('admin_users')
             ->alias('u')
             ->leftJoin('departments d', 'd.id = u.department_id')
             ->field('u.id,u.department_id,u.username,u.nickname,u.avatar,u.phone,u.email,u.status,u.is_super,u.remark,u.created_at,d.name as department_name')
-            ->order('u.id asc')
-            ->select()
-            ->toArray();
+            ->order('u.id asc');
+
+        $dataScopeService = new DataScopeService();
+        $scope = $dataScopeService->getEffectiveScope();
+        if ($scope === 1) {
+            $user = current_admin_user();
+            $query->where('u.id', $user ? (int) $user->id : 0);
+        } elseif ($scope === 2 || $scope === 3) {
+            $deptIds = $dataScopeService->getVisibleDeptIds();
+            if (!empty($deptIds)) {
+                $query->whereIn('u.department_id', $deptIds);
+            }
+        }
+
+        $rows = $query->select()->toArray();
 
         foreach ($rows as &$row) {
             $roles = Db::name('admin_user_roles')
@@ -110,13 +123,51 @@ class MetaController extends BaseController
 
     public function loginLogs()
     {
-        $rows = Db::name('login_logs')->order('id desc')->limit(50)->select()->toArray();
+        $query = Db::name('login_logs')
+            ->alias('ll')
+            ->leftJoin('admin_users u', 'u.id = ll.admin_user_id')
+            ->field('ll.*')
+            ->order('ll.id desc')
+            ->limit(50);
+
+        $dataScopeService = new DataScopeService();
+        $scope = $dataScopeService->getEffectiveScope();
+        if ($scope === 1) {
+            $user = current_admin_user();
+            $query->where('ll.admin_user_id', $user ? (int) $user->id : 0);
+        } elseif ($scope === 2 || $scope === 3) {
+            $deptIds = $dataScopeService->getVisibleDeptIds();
+            if (!empty($deptIds)) {
+                $query->whereIn('u.department_id', $deptIds);
+            }
+        }
+
+        $rows = $query->select()->toArray();
         return json_success($rows);
     }
 
     public function operationLogs()
     {
-        $rows = Db::name('operation_logs')->order('id desc')->limit(50)->select()->toArray();
+        $query = Db::name('operation_logs')
+            ->alias('ol')
+            ->leftJoin('admin_users u', 'u.id = ol.admin_user_id')
+            ->field('ol.*')
+            ->order('ol.id desc')
+            ->limit(50);
+
+        $dataScopeService = new DataScopeService();
+        $scope = $dataScopeService->getEffectiveScope();
+        if ($scope === 1) {
+            $user = current_admin_user();
+            $query->where('ol.admin_user_id', $user ? (int) $user->id : 0);
+        } elseif ($scope === 2 || $scope === 3) {
+            $deptIds = $dataScopeService->getVisibleDeptIds();
+            if (!empty($deptIds)) {
+                $query->whereIn('u.department_id', $deptIds);
+            }
+        }
+
+        $rows = $query->select()->toArray();
         return json_success($rows);
     }
 

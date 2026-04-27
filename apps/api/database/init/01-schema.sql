@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS roles (
   name VARCHAR(100) NOT NULL,
   code VARCHAR(100) NOT NULL,
   status TINYINT NOT NULL DEFAULT 1,
+  data_scope TINYINT NOT NULL DEFAULT 2 COMMENT '数据权限：1=仅本人 2=本部门 3=本部门及以下 4=全部',
   remark VARCHAR(255) DEFAULT '',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -146,9 +147,9 @@ INSERT INTO departments (id, parent_id, name, leader, phone, sort, status, remar
 VALUES (1, 0, '总部', '', '', 0, 1, '默认根部门')
 ON DUPLICATE KEY UPDATE name = VALUES(name), remark = VALUES(remark);
 
-INSERT INTO roles (id, name, code, status, remark)
-VALUES (1, '超级管理员', 'super_admin', 1, '系统内置超级管理员角色')
-ON DUPLICATE KEY UPDATE name = VALUES(name), remark = VALUES(remark);
+INSERT INTO roles (id, name, code, status, data_scope, remark)
+VALUES (1, '超级管理员', 'super_admin', 1, 4, '系统内置超级管理员角色')
+ON DUPLICATE KEY UPDATE name = VALUES(name), data_scope = VALUES(data_scope), remark = VALUES(remark);
 
 INSERT INTO permissions (id, parent_id, name, type, route_path, component_path, permission_key, icon, sort, hidden, status, remark)
 VALUES
