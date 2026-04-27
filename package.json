@@ -10,7 +10,7 @@
     "api:up": "docker compose up -d api mysql",
     "api:down": "docker compose down",
     "api:logs": "docker compose logs -f api",
-    "api:init": "docker compose run --rm composer create-project topthink/think /workspace/apps/api",
+    "api:install": "docker compose run --rm composer install --working-dir=apps/api",
     "lint": "pnpm --filter admin lint"
   },
   "pnpm": {
