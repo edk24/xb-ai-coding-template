@@ -6,10 +6,18 @@ services:
     volumes:
       - ./apps/api:/app
     command: sh -c "php -S 0.0.0.0:8000 -t public"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: admin_system
+      DB_USER: admin
+      DB_PASS: admin123
+      DB_CHARSET: utf8mb4
     ports:
       - "8000:8000"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 
   mysql:
     image: mysql:8.4
@@ -24,7 +32,11 @@ services:
       - "3309:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./apps/api/database/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin", "-padmin123"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   composer:
     image: composer:latest

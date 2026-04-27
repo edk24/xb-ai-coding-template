@@ -106,11 +106,17 @@ docker compose up -d api mysql
 # 查看日志
 pnpm run api:logs
 
+# 执行数据库迁移
+pnpm run api:migrate
+
+# 初始化内置数据
+pnpm run api:seed
+
 # 停止
 pnpm run api:down
 ```
 
-首次启动时 MySQL 容器会自动执行 `database/init/01-schema.sql`，完成建表与种子数据初始化。
+数据库表结构通过 `database/migrations` 管理，内置部门、角色、权限和默认管理员账号通过 `database/seeds` 初始化。
 
 ### 3.3 本地验证
 
@@ -168,8 +174,8 @@ apps/api/
 │   └── ...
 │
 ├── database/
-│   └── init/
-│       └── 01-schema.sql         # 建表脚本 + 种子数据
+│   ├── migrations/               # 数据库迁移
+│   └── seeds/                    # 初始化数据
 │
 ├── route/
 │   └── app.php                   # 全部 API 路由定义
@@ -1217,7 +1223,7 @@ docker compose exec mysql mysql -u admin -p admin_system
 
 ### 10.3 注意事项
 
-- 首次启动 MySQL 会自动执行 `database/init/01-schema.sql` 初始化表结构和种子数据
+- 首次部署需要先执行 `pnpm run api:migrate` 创建表结构，再按需执行 `pnpm run api:seed` 初始化内置数据
 - 生产环境部署前务必修改 `JWT_SECRET` 为随机密钥
 - 生产环境应关闭 `APP_DEBUG`
 - 建议使用 Nginx 反向代理替代 PHP 内置服务器

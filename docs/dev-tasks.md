@@ -29,12 +29,12 @@
 - 全局异常处理配置
 - 中间件注册机制
 
-### 0.2 数据库初始化 ✅ 已完成
+### 0.2 数据库迁移初始化 ✅ 已完成
 
-**文件：** `apps/api/database/init/01-schema.sql`
+**文件：** `apps/api/database/migrations/*`、`apps/api/database/seeds/*`
 
-- 8 张表建表脚本
-- 种子数据（根部门、超级管理员角色、16 个权限节点、默认 admin 账号）
+- 通过迁移管理 10 张业务表结构
+- 通过 seed 初始化根部门、超级管理员角色、权限节点、默认 admin 账号和系统配置
 
 ### 0.3 前端工程初始化 ⏸ 待建
 
@@ -236,4 +236,4 @@
 
 1. **并行：** 前端任务中，认证模块（P1）可先做，登录页完成后即可与后端联调
 2. **强依赖：** RBAC 前端页面（P2）依赖于菜单树接口，必须先确认 `/admin-api/meta/menu-tree` 可用
-3. **先跑后端：** 建议先启动 Docker 后端（`pnpm run api:up`），确认所有 API 正常再开始前端开发
+3. **先跑后端：** 建议先启动 Docker 后端（`pnpm run api:up`），执行数据库迁移（`pnpm run api:migrate`）和初始化数据（`pnpm run api:seed`）后，确认所有 API 正常再开始前端开发

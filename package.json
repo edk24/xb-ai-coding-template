@@ -11,7 +11,11 @@
     "api:down": "docker compose down",
     "api:logs": "docker compose logs -f api",
     "api:install": "docker compose run --rm composer install --working-dir=apps/api",
-    "lint": "pnpm --filter admin lint"
+    "lint": "pnpm --filter admin lint",
+    "api:migrate": "docker compose run --rm api php think migrate:run",
+    "api:migrate:rollback": "docker compose run --rm api php think migrate:rollback",
+    "api:migrate:status": "docker compose run --rm api php think migrate:status",
+    "api:seed": "docker compose run --rm api php think seed:run"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["esbuild"]
