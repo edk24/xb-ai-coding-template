@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, Outlet, useLocation } from 'react-router-dom'
-import { Layout, Menu, Dropdown, Avatar, Typography, Modal, Breadcrumb, Button } from 'antd'
+import { Layout, Menu, Dropdown, Avatar, Typography, Modal, Breadcrumb, Button, ConfigProvider } from 'antd'
 import type { MenuProps } from 'antd'
 import {
   UserOutlined, LogoutOutlined, TeamOutlined, SafetyCertificateOutlined,
@@ -15,6 +15,15 @@ import type { Permission } from '../api/permissions'
 
 const { Header, Sider, Content } = Layout
 const { Text } = Typography
+
+const sidebarTheme = {
+  background: '#0f172a',
+  hoverBackground: '#1e293b',
+  selectedBackground: '#2563eb',
+  subMenuBackground: '#111827',
+  textColor: '#cbd5e1',
+  selectedTextColor: '#fff',
+}
 
 // Icon mapping: permission icon name → Ant Design icon component
 const iconMap: Record<string, React.ReactNode> = {
@@ -128,26 +137,47 @@ export default function AdminLayout() {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        width={240}
-        collapsible
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        style={{ background: '#141414' }}
+      <ConfigProvider
+        theme={{
+          components: {
+            Layout: {
+              siderBg: sidebarTheme.background,
+              triggerBg: sidebarTheme.subMenuBackground,
+              triggerColor: sidebarTheme.selectedTextColor,
+            },
+            Menu: {
+              darkItemBg: sidebarTheme.background,
+              darkSubMenuItemBg: sidebarTheme.subMenuBackground,
+              darkItemHoverBg: sidebarTheme.hoverBackground,
+              darkItemSelectedBg: sidebarTheme.selectedBackground,
+              darkItemColor: sidebarTheme.textColor,
+              darkItemSelectedColor: sidebarTheme.selectedTextColor,
+            },
+          },
+        }}
       >
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Text strong style={{ color: '#fff', fontSize: 18 }}>
-            {collapsed ? '后台' : '后台管理系统'}
-          </Text>
-        </div>
-        <Menu
-          mode="inline"
-          theme="dark"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={handleMenuClick}
-        />
-      </Sider>
+        <Sider
+          width={240}
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
+          style={{ background: sidebarTheme.background }}
+        >
+          <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Text strong style={{ color: sidebarTheme.selectedTextColor, fontSize: 18 }}>
+              {collapsed ? '后台' : '后台管理系统'}
+            </Text>
+          </div>
+          <Menu
+            mode="inline"
+            theme="dark"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={handleMenuClick}
+            style={{ background: sidebarTheme.background, borderInlineEnd: 0 }}
+          />
+        </Sider>
+      </ConfigProvider>
       <Layout>
         <Header
           style={{
@@ -155,7 +185,8 @@ export default function AdminLayout() {
             padding: '0 24px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
+            gap: 12,
             borderBottom: mode === 'dark' ? 'none' : '1px solid #f0f0f0',
           }}
         >
