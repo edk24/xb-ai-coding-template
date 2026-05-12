@@ -109,7 +109,8 @@ export default function Config() {
 
   // --- Batch save ---
   const handleSave = async () => {
-    const values = await form.validateFields()
+    await form.validateFields()
+    const values = form.getFieldsValue()
     setSaving(true)
     try {
       const batch: { id: number; value: any }[] = items.map((item) => ({
