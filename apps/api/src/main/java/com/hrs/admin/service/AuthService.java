@@ -79,13 +79,15 @@ public class AuthService {
             ORDER BY r.id
             """, String.class, userId));
         if (Boolean.TRUE.equals(profile.getSuperAdmin())) {
-            profile.setPermissionKeys(jdbc.queryForList("SELECT permission_key FROM permissions ORDER BY id", String.class));
+            // 已禁用的权限不下发，避免前端凭 permission_keys 展示已停用的菜单或按钮。
+            profile.setPermissionKeys(jdbc.queryForList(
+                "SELECT permission_key FROM permissions WHERE status = 1 ORDER BY id", String.class));
         } else {
             profile.setPermissionKeys(jdbc.queryForList("""
                 SELECT DISTINCT p.permission_key FROM permissions p
                 JOIN role_permissions rp ON rp.permission_id = p.id
                 JOIN admin_user_roles aur ON aur.role_id = rp.role_id
-                WHERE aur.admin_user_id = ?
+                WHERE aur.admin_user_id = ? AND p.status = 1
                 ORDER BY p.id
                 """, String.class, userId));
         }
