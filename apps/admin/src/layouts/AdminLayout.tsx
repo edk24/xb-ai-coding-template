@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '../store/auth'
 import { useThemeStore } from '../store/theme'
 import { logoutApi } from '../api/auth'
-import { getPermissionsTreeApi } from '../api/permissions'
+import { getMenuTreeApi } from '../api/permissions'
 import type { Permission } from '../api/permissions'
 
 const { Header, Sider, Content } = Layout
@@ -56,16 +56,21 @@ const breadcrumbMap: Record<string, string> = {
   '/profile/password': '修改密码',
 }
 
-function buildMenuItems(items: Permission[] | null): MenuProps['items'] {
+/** 侧边栏只保留一级菜单的图标，二级及以下菜单统一不展示图标。 */
+function shouldShowMenuIcon(level: number): boolean {
+  return level === 0
+}
+
+function buildMenuItems(items: Permission[] | null, level = 0): MenuProps['items'] {
   if (!items) return []
   return items
     .filter((item) => item.type !== 'button' && item.status === 1 && item.permission_key !== 'profile')
     .map((item) => {
       const routePath = item.route_path || '/'
-      const children = item.children ? buildMenuItems(item.children) : undefined
+      const children = item.children ? buildMenuItems(item.children, level + 1) : undefined
       return {
         key: routePath,
-        icon: item.icon ? iconMap[item.icon] : undefined,
+        icon: shouldShowMenuIcon(level) && item.icon ? iconMap[item.icon] : undefined,
         label: item.name,
         children: children?.length ? children : undefined,
       }
@@ -89,7 +94,7 @@ export default function AdminLayout() {
   const avatarSrc = getAvatarSrc(user?.avatar)
 
   useEffect(() => {
-    getPermissionsTreeApi().then((res) => {
+    getMenuTreeApi().then((res) => {
       setMenuItems(buildMenuItems(res.data.data))
     })
   }, [])

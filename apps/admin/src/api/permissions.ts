@@ -35,6 +35,16 @@ export function getPermissionsTreeApi() {
   )
 }
 
+/**
+ * 侧边栏菜单树：后端按当前登录用户的角色过滤，只返回该用户可用的菜单。
+ * 与 getPermissionsTreeApi（权限管理页使用的全量权限树）区分开。
+ */
+export function getMenuTreeApi() {
+  return client.get<{ code: number; message: string; data: Permission[] }>(
+    '/meta/menu-tree',
+  )
+}
+
 export function createPermissionApi(params: CreatePermissionParams) {
   return client.post<{ code: number; message: string; data: Permission }>(
     '/permissions',
