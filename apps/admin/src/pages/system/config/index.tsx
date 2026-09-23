@@ -8,7 +8,7 @@ import {
   getConfigItemsApi, createConfigItemApi, updateConfigItemApi, deleteConfigItemApi, batchSaveConfigItemsApi,
 } from '../../../api/config'
 import type {
-  ConfigItem, ConfigItemType, CreateConfigItemParams,
+  BatchSaveItem, ConfigItem, ConfigItemType, CreateConfigItemParams,
 } from '../../../api/config'
 
 const typeLabels: Record<ConfigItemType, string> = {
@@ -33,6 +33,23 @@ function parseOptions(raw: string): { label: string; value: string }[] {
   } catch {
     return []
   }
+}
+
+/** 表单控件值 → 配置项存储值：开关统一存 '1'/'0'，多选/多图存 JSON 字符串，空值存 '' */
+function serializeConfigValue(item: ConfigItem, raw: unknown): unknown {
+  if (item.type === 'switch') return raw ? '1' : '0'
+  if (raw === undefined || raw === null) return ''
+  if (Array.isArray(raw)) return JSON.stringify(raw)
+  // ColorPicker 的取值是颜色对象，取其十六进制字符串
+  if (typeof raw === 'object' && typeof (raw as { toHexString?: () => string }).toHexString === 'function') {
+    return (raw as { toHexString: () => string }).toHexString()
+  }
+  return raw
+}
+
+/** 组装某个分组的批量保存参数：只包含该分组的配置项 */
+function buildConfigSaveBatch(groupItems: ConfigItem[], values: Record<string, unknown>): BatchSaveItem[] {
+  return groupItems.map((item) => ({ id: item.id, value: serializeConfigValue(item, values[item.key]) }))
 }
 
 export default function Config() {
@@ -108,16 +125,18 @@ export default function Config() {
   }, [groups])
 
   // --- Batch save ---
-  const handleSave = async () => {
-    await form.validateFields()
-    const values = form.getFieldsValue()
+  /**
+   * 保存当前选项卡的配置。
+   * 未打开过的选项卡不会渲染表单字段，全量提交会把它们的值写成空串、清空其他分组配置，
+   * 因此这里只校验并提交当前分组的配置项。
+   */
+  const handleSave = async (groupItems: ConfigItem[]) => {
+    const fieldKeys = groupItems.map((item) => item.key)
+    await form.validateFields(fieldKeys)
+    const values = form.getFieldsValue(fieldKeys) as Record<string, unknown>
     setSaving(true)
     try {
-      const batch: { id: number; value: any }[] = items.map((item) => ({
-        id: item.id,
-        value: values[item.key] ?? '',
-      }))
-      await batchSaveConfigItemsApi(batch)
+      await batchSaveConfigItemsApi(buildConfigSaveBatch(groupItems, values))
       message.success('配置已保存')
     } finally {
       setSaving(false)
@@ -269,7 +288,7 @@ export default function Config() {
             })}
           </Form>
           {g.items.length > 0 && (
-            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={handleSave} size="large">
+            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => handleSave(g.items)} size="large">
               保存修改
             </Button>
           )}

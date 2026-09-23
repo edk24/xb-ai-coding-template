@@ -34,7 +34,8 @@ export interface CreateConfigItemParams {
 
 export interface BatchSaveItem {
   id: number
-  value: string | string[] | number | boolean
+  // 动态配置控件的取值形态不固定（字符串、数组、数字、颜色对象等），统一交给后端序列化落库
+  value: unknown
 }
 
 // -- Items --
