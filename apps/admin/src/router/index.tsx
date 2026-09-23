@@ -10,6 +10,7 @@ import Roles from '../pages/system/roles'
 import Departments from '../pages/system/departments'
 import Permissions from '../pages/system/permissions'
 import Config from '../pages/system/config'
+import ScheduledJobs from '../pages/system/scheduled-jobs'
 import LoginLogs from '../pages/logs/login'
 import OperationLogs from '../pages/logs/operation'
 import Attachments from '../pages/attachments'
@@ -35,6 +36,7 @@ export default function AppRouter() {
         <Route path="system/departments" element={<Departments />} />
         <Route path="system/permissions" element={<Permissions />} />
         <Route path="system/config" element={<Config />} />
+        <Route path="system/scheduled-jobs" element={<ScheduledJobs />} />
         <Route path="logs/login" element={<LoginLogs />} />
         <Route path="logs/operation" element={<OperationLogs />} />
         <Route path="attachments" element={<Attachments />} />

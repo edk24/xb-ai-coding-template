@@ -5,7 +5,7 @@ import type { MenuProps } from 'antd'
 import {
   UserOutlined, LogoutOutlined, TeamOutlined, SafetyCertificateOutlined,
   ApartmentOutlined, KeyOutlined, DashboardOutlined, FileTextOutlined,
-  SunOutlined, MoonOutlined, PaperClipOutlined,
+  SunOutlined, MoonOutlined, PaperClipOutlined, ClockCircleOutlined,
 } from '@ant-design/icons'
 import { useAuthStore } from '../store/auth'
 import { useThemeStore } from '../store/theme'
@@ -36,6 +36,7 @@ const iconMap: Record<string, React.ReactNode> = {
   KeyOutlined: <KeyOutlined />,
   FileTextOutlined: <FileTextOutlined />,
   PaperClipOutlined: <PaperClipOutlined />,
+  ClockCircleOutlined: <ClockCircleOutlined />,
   LogoutOutlined: <LogoutOutlined />,
 }
 
@@ -47,6 +48,7 @@ const breadcrumbMap: Record<string, string> = {
   '/system/departments': '部门管理',
   '/system/permissions': '菜单权限',
   '/system/config': '系统配置',
+  '/system/scheduled-jobs': '定时任务',
   '/logs/login': '登录日志',
   '/logs/operation': '操作日志',
   '/attachments': '附件中心',
