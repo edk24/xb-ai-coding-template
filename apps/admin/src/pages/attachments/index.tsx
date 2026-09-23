@@ -41,7 +41,6 @@ export default function Attachments() {
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
   const [storageType, setStorageType] = useState('local')
   const [typeFilter, setTypeFilter] = useState<string>('')
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
@@ -74,21 +73,17 @@ export default function Attachments() {
 
   /** 本地上传 */
   const handleLocalUpload = async (file: File): Promise<boolean> => {
-    setUploading(true)
     try {
       await uploadAttachmentApi(file)
       return true
     } catch (e: any) {
       message.error(e?.response?.data?.message || '上传失败')
       return false
-    } finally {
-      setUploading(false)
     }
   }
 
   /** COS/OSS 前端直传 */
   const handleCloudUpload = async (file: File, cloudType: string): Promise<boolean> => {
-    setUploading(true)
     try {
       const credRes = await getCredentialsApi(cloudType)
       const { credentials, region, bucket, path_prefix, cdn_url } = credRes.data.data
@@ -145,8 +140,6 @@ export default function Attachments() {
     } catch (e: any) {
       message.error(e?.response?.data?.message || e?.message || '上传失败')
       return false
-    } finally {
-      setUploading(false)
     }
   }
 
