@@ -11,9 +11,15 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   sql:
     init:
-      mode: always
-      schema-locations: classpath:db/schema.sql
-      data-locations: classpath:db/data.sql
+      # 库结构与初始数据统一交给 Flyway，避免每次启动重复执行脚本
+      mode: never
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    # 老库（此前由 schema.sql/data.sql 初始化）先打基线，再执行幂等的 V1/V2
+    baseline-on-migrate: true
+    baseline-version: 0
   servlet:
     multipart:
       max-file-size: 20MB
