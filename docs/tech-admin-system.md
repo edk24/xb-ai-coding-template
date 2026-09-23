@@ -8,7 +8,7 @@
 
 | 路径 | 说明 |
 |------|------|
-| `apps/api` | ThinkPHP 8 后端接口工程 |
+| `apps/api` | Java Spring Boot 后端接口工程 |
 | `packages` | 共享包（预留） |
 | `docs` | 需求与技术文档 |
 
@@ -25,20 +25,20 @@
 └──────────────────────┬──────────────────────────┘
                        │ HTTP / JSON
 ┌──────────────────────▼──────────────────────────┐
-│              Nginx / PHP Built-in Server           │
-│                 apps/api/public/index.php          │
+│              Nginx / Spring Boot API               │
+│              Embedded Tomcat / Undertow            │
 └──────────────────────┬──────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────┐
-│              ThinkPHP 8 路由层                    │
-│              route/app.php                       │
-│              /admin-api/* 路由分组                │
+│              Spring MVC 路由层                    │
+│              @RestController / @RequestMapping   │
+│              /admin-api/* 接口分组                │
 └──────────────────────┬──────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────┐
-│              中间件：JWT 鉴权                    │
-│              app/middleware/JwtAuth.php          │
-│              Bearer Token → 解析 → 注入用户       │
+│              安全层：JWT 鉴权过滤器              │
+│              security/JwtTokenFilter             │
+│              Bearer Token → 解析 → 注入上下文     │
 └──────────────────────┬──────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────┐
@@ -49,12 +49,17 @@
 └──────────────────────┬──────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────┐
-│              AuthService 服务层                   │
-│              登录验证 / Token 生成 / 日志记录      │
+│              Service 服务层                       │
+│              认证 / 权限 / 日志 / 业务规则         │
 └──────────────────────┬──────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────┐
-│              数据库层 MySQL 8.4                   │
+│              Mapper 数据访问层                   │
+│              MyBatis Mapper / XML SQL            │
+└──────────────────────┬──────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────┐
+│              数据库层 MySQL 8.0                   │
 │  8 张表：departments / roles / permissions       │
 │  admin_users / admin_user_roles / role_permissions│
 │  login_logs / operation_logs                     │
@@ -65,25 +70,26 @@
 
 | 组件 | 技术选型 |
 |------|---------|
-| 运行环境 | PHP >= 8.0，Docker |
-| 框架 | ThinkPHP 8 (topthink/framework ^8.0) |
-| ORM | topthink/think-orm ^3.0 |
-| JWT | firebase/php-jwt ^7.0 (HS256) |
-| 数据库 | MySQL 8.4 |
-| 容器化 | Docker Compose (PHP 8.3 CLI + MySQL 8.4) |
+| 运行环境 | Java 21，Docker |
+| 框架 | Spring Boot 3.x (Spring Web / Spring Security / Spring Validation) |
+| 构建工具 | Maven |
+| ORM / SQL | MyBatis |
+| JWT | HS256（Java JWT 库） |
+| 数据库 | MySQL 8.0 |
+| 容器化 | Docker Compose (JDK 21 + MySQL 8.0) |
 
 ### 2.3 请求生命周期
 
 ```
-请求 → server → router → JwtAuth 中间件 → 控制器 → AuthService → 数据库
-                                                    ↓
-                                              操作日志记录 ← 控制器记录
+请求 → Spring MVC → JwtTokenFilter → Controller → Service → Mapper → MySQL
+                                                ↓
+                                          操作日志记录
 ```
 
 - 登录接口：`POST /admin-api/auth/login` 不经过 JWT 中间件
 - 其余所有 `/admin-api/*` 接口均需 `Authorization: Bearer <token>`
-- JWT 中间件验证 token → 查询用户 → 注入 `currentAdminUser` 到容器
-- CRUD 控制器在数据变更后调用 `AuthService::recordOperationLog()` 记录操作日志
+- JWT 过滤器验证 token → 查询用户 → 注入 `SecurityContext` / 当前用户上下文
+- CRUD 控制器或业务服务在数据变更后调用 `LogService.recordOperationLog()` 记录操作日志
 
 ---
 
@@ -92,6 +98,7 @@
 ### 3.1 前置依赖
 
 - Docker & Docker Compose
+- Java 21、Maven（本地直接运行时需要）
 - pnpm（可选，用于根工程脚本）
 
 ### 3.2 快速启动
@@ -106,17 +113,14 @@ docker compose up -d api mysql
 # 查看日志
 pnpm run api:logs
 
-# 执行数据库迁移
-pnpm run api:migrate
-
-# 初始化内置数据
-pnpm run api:seed
+# 本地构建 Spring Boot 应用
+cd apps/api && ./mvnw -DskipTests package
 
 # 停止
 pnpm run api:down
 ```
 
-数据库表结构通过 `database/migrations` 管理，内置部门、角色、权限和默认管理员账号通过 `database/seeds` 初始化。
+数据库表结构通过 `src/main/resources/db/migration` 管理，内置部门、角色、权限和默认管理员账号通过 `src/main/resources/db/seed` 初始化。
 
 ### 3.3 本地验证
 
@@ -138,50 +142,39 @@ curl -X POST http://localhost:8000/admin-api/auth/login \
 apps/api/
 ├── .env                          # 活跃环境配置
 ├── .example.env                  # 环境变量模板
-├── composer.json                 # PHP 依赖
-├── Dockerfile                    # PHP 8.3 CLI 镜像
+├── pom.xml                       # Maven 依赖与构建配置
+├── mvnw / mvnw.cmd               # Maven Wrapper
+├── Dockerfile                    # JDK 21 / Spring Boot 镜像
 │
-├── app/
-│   ├── BaseController.php        # 控制器基类（提供 validate() 方法）
-│   ├── common.php                # 全局函数（JWT、密码哈希、响应辅助）
-│   ├── ExceptionHandle.php       # 异常处理（ValidateException 等不记日志）
-│   ├── middleware.php             # 全局中间件（当前为空）
+├── src/
+│   ├── main/
+│   │   ├── java/com/hrs/admin/
+│   │   │   ├── AdminApiApplication.java  # Spring Boot 启动入口
+│   │   │   ├── common/                   # 统一响应、分页、工具类
+│   │   │   ├── config/                   # Web/Security/MyBatis 配置
+│   │   │   ├── controller/
+│   │   │   │   └── admin/
+│   │   │   │       ├── AuthController.java        # 登录/登出/个人资料/修改密码
+│   │   │   │       ├── AdminUserController.java   # 管理员 CRUD
+│   │   │   │       ├── RoleController.java        # 角色 CRUD
+│   │   │   │       ├── DepartmentController.java  # 部门 CRUD
+│   │   │   │       ├── PermissionController.java  # 菜单权限 CRUD
+│   │   │   │       └── MetaController.java        # 只读查询（列表/树/日志/仪表盘）
+│   │   │   ├── dto/                      # 请求 DTO
+│   │   │   ├── vo/                       # 响应 VO
+│   │   │   ├── entity/                   # 数据库实体
+│   │   │   ├── mapper/                   # MyBatis Mapper 接口
+│   │   │   ├── service/                  # 认证、权限、日志、业务服务
+│   │   │   ├── security/                 # JWT 过滤器与当前用户上下文
+│   │   │   └── exception/                # 全局异常与错误响应处理
+│   │   │
+│   │   └── resources/
+│   │       ├── application.yml           # 应用配置
+│   │       ├── mapper/                   # MyBatis XML SQL
+│   │       ├── db/migration/             # 数据库迁移脚本
+│   │       └── db/seed/                  # 初始化数据脚本
 │   │
-│   ├── controller/
-│   │   ├── Index.php             # 默认首页
-│   │   └── admin/
-│   │       ├── AuthController.php        # 登录/登出/个人资料/修改密码
-│   │       ├── AdminUserController.php   # 管理员 CRUD
-│   │       ├── RoleController.php        # 角色 CRUD
-│   │       ├── DepartmentController.php  # 部门 CRUD
-│   │       ├── PermissionController.php  # 菜单权限 CRUD
-│   │       └── MetaController.php        # 只读查询（列表/树/日志/仪表盘）
-│   │
-│   ├── middleware/
-│   │   └── JwtAuth.php           # JWT 鉴权中间件
-│   │
-│   ├── model/
-│   │   └── AdminUser.php         # 管理员模型
-│   │
-│   └── service/
-│       └── AuthService.php       # 认证服务（登录/资料/操作日志/登录日志）
-│
-├── config/
-│   ├── app.php                   # 应用配置
-│   ├── database.php              # 数据库连接配置
-│   ├── middleware.php             # 中间件别名（admin.auth → JwtAuth）
-│   ├── route.php                 # 路由配置
-│   └── ...
-│
-├── database/
-│   ├── migrations/               # 数据库迁移
-│   └── seeds/                    # 初始化数据
-│
-├── route/
-│   └── app.php                   # 全部 API 路由定义
-│
-└── public/
-    └── index.php                 # 应用入口
+│   └── test/java/com/hrs/admin/   # 单元测试与接口测试
 ```
 
 ---
@@ -1031,14 +1024,14 @@ Authorization: Bearer <token>
 ### 7.1 JWT 认证流程
 
 ```
-登录请求 → AuthService::attempt() → 校验账号/密码/状态
+登录请求 → AuthService.login() → 校验账号/密码/状态
   → 通过 → 生成 JWT Token (HS256, 默认2h过期)
   → 记录登录日志 → 返回 token + 用户信息
 
-后续请求 → JwtAuth 中间件 → 提取 Bearer Token
+后续请求 → JwtTokenFilter → 提取 Bearer Token
   → 解析 payload (uid/username/is_super)
   → 查询数据库确认用户存在且启用
-  → 注入 currentAdminUser 到容器 → 通过控制器
+  → 写入 SecurityContext / AdminUserContext → 通过控制器
 ```
 
 **Token Payload 结构：**
@@ -1108,14 +1101,13 @@ roles:assign-permissions      # 分配角色权限
 
 ### 8.1 密码加密
 
-```php
-function admin_password_hash(string $password, string $salt): string
-{
-    return md5(md5($password) . $salt);
+```java
+public static String adminPasswordHash(String password, String salt) {
+    return md5Hex(md5Hex(password) + salt);
 }
 ```
 
-- 每个管理员独立 8 位十六进制随机盐值（`bin2hex(random_bytes(4))`）
+- 每个管理员独立 8 位十六进制随机盐值（`SecureRandom` 生成 4 字节后转十六进制字符串）
 - 后台不保存明文密码
 - 该方案为既有兼容约束，不作为现代密码学最佳实践推荐
 
@@ -1123,9 +1115,9 @@ function admin_password_hash(string $password, string $salt): string
 
 | 规则 | 实现 |
 |------|------|
-| 不可删除 | AdminUserController::delete() 校验 is_super |
-| 不可禁用 | AdminUserController::update() 校验 is_super 时不接受 status=0 |
-| 不可重置密码 | AdminUserController::resetPassword() 拒绝 is_super |
+| 不可删除 | `AdminUserService.delete()` 校验 `is_super` |
+| 不可禁用 | `AdminUserService.update()` 校验 `is_super` 时不接受 `status=0` |
+| 不可重置密码 | `AdminUserService.resetPassword()` 拒绝 `is_super` |
 | 内置角色（id=1） | 不可删除 |
 | 根部门（id=1） | 不可删除 |
 | 内置权限节点（id<=16）| 不可删除，id=1,2,3 的标识不可修改 |
@@ -1144,7 +1136,7 @@ function admin_password_hash(string $password, string $salt): string
 
 ### 8.4 参数校验
 
-- 输入参数通过 ThinkPHP Validate 校验规则（require、max、min、in、integer 等）
+- 输入参数通过 Spring Validation / Jakarta Validation 校验（如 `@NotBlank`、`@Size`、`@Min`、`@Max`、`@Pattern`）
 - 手机号、邮箱可选格式校验
 - 关联数据存在性校验（如部门、角色、权限 ID）
 - 唯一性校验（用户名、角色名、角色编码、权限标识）
@@ -1211,22 +1203,20 @@ docker compose exec mysql mysql -u admin -p admin_system
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| DB_DRIVER | mysql | 数据库驱动 |
-| DB_HOST | mysql | 数据库主机 |
-| DB_NAME | admin_system | 数据库名 |
-| DB_USER | admin | 数据库用户 |
-| DB_PASS | admin123 | 数据库密码 |
-| DB_PORT | 3306 | 端口 |
+| SERVER_PORT | 8000 | API 服务端口 |
+| SPRING_PROFILES_ACTIVE | local | Spring 运行环境 |
+| SPRING_DATASOURCE_URL | jdbc:mysql://mysql:3306/admin_system | 数据库连接地址 |
+| SPRING_DATASOURCE_USERNAME | admin | 数据库用户 |
+| SPRING_DATASOURCE_PASSWORD | admin123 | 数据库密码 |
 | JWT_SECRET | (内置密钥) | JWT 签名密钥 |
-| JWT_EXPIRE | 7200 | Token 过期时间（秒） |
-| APP_DEBUG | true | 调试模式 |
+| JWT_EXPIRE_SECONDS | 7200 | Token 过期时间（秒） |
 
 ### 10.3 注意事项
 
-- 首次部署需要先执行 `pnpm run api:migrate` 创建表结构，再按需执行 `pnpm run api:seed` 初始化内置数据
+- 首次部署需要确保 MySQL 8.0 可连接，并在 API 启动时执行数据库迁移与初始化脚本
 - 生产环境部署前务必修改 `JWT_SECRET` 为随机密钥
-- 生产环境应关闭 `APP_DEBUG`
-- 建议使用 Nginx 反向代理替代 PHP 内置服务器
+- 生产环境应使用 `prod` profile，并收敛日志级别与错误输出
+- 建议使用 Nginx 反向代理到 Spring Boot 服务
 
 ---
 

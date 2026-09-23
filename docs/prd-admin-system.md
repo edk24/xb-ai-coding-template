@@ -8,7 +8,7 @@
 
 - 一个基于 pnpm monorepo 的项目仓库
 - 一个可扩展的后台前端工程（React + Ant Design 6.x + Zustand
-- 一个可扩展的后台接口工程（ThinkPHP 8）
+- 一个可扩展的后台接口工程（Java Spring Boot）
 - 一套清晰的 RBAC 权限模型与基础数据关系
 - 一份可直接指导开发与验收的产品 PRD
 
