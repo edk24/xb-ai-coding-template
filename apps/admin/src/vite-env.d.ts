@@ -9,3 +9,7 @@ declare module 'ali-oss' {
   const OSS: any
   export default OSS
 }
+
+declare module 'md5' {
+  export default function md5(value: string): string
+}
