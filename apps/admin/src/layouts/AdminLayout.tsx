@@ -145,7 +145,7 @@ export default function AdminLayout() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout className="admin-layout-shell">
       <ConfigProvider
         theme={{
           components: {
@@ -170,6 +170,7 @@ export default function AdminLayout() {
           collapsible
           collapsed={collapsed}
           onCollapse={setCollapsed}
+          className="admin-layout-sider"
           style={{ background: sidebarTheme.background }}
         >
           <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -183,11 +184,12 @@ export default function AdminLayout() {
             selectedKeys={[location.pathname]}
             items={menuItems}
             onClick={handleMenuClick}
+            className="admin-sidebar-menu"
             style={{ background: sidebarTheme.background, borderInlineEnd: 0 }}
           />
         </Sider>
       </ConfigProvider>
-      <Layout>
+      <Layout className="admin-main-shell">
         <Header
           style={{
             background: mode === 'dark' ? '#1f1f1f' : '#fff',
@@ -212,7 +214,7 @@ export default function AdminLayout() {
             </div>
           </Dropdown>
         </Header>
-        <Content style={{ margin: 24 }}>
+        <Content className="admin-main-content">
           <Breadcrumb items={breadcrumbItems} style={{ marginBottom: 16 }} />
           <Outlet />
         </Content>

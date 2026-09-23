@@ -1,4 +1,108 @@
-html, body {
+html, body, #root {
+  height: 100%;
   margin: 0;
   padding: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+/* 后台外壳固定在视口内，避免左侧菜单跟随页面内容一起滚动。 */
+.admin-layout-shell {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 左侧菜单自己占满视口，菜单项过多时只在菜单区域内部滚动。 */
+.admin-layout-sider {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.admin-sidebar-menu {
+  max-height: calc(100vh - 64px - 48px);
+  overflow-y: auto;
+}
+
+/* 右侧区域独立承载页面滚动，长表格不会再推动整个应用外壳。 */
+.admin-main-shell {
+  height: 100vh;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-main-content {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 24px;
+  box-sizing: border-box;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* 统一后台滚动条样式，Ant Design 负责组件滚动结构，原生滚动条外观仍需用 CSS 控制。 */
+.admin-main-content,
+.admin-sidebar-menu,
+.admin-main-content .ant-table-content {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.admin-main-content:hover,
+.admin-main-content:focus-within,
+.admin-sidebar-menu:hover,
+.admin-sidebar-menu:focus-within,
+.admin-main-content .ant-table-content:hover,
+.admin-main-content .ant-table-content:focus-within {
+  scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
+}
+
+.admin-main-content::-webkit-scrollbar,
+.admin-sidebar-menu::-webkit-scrollbar,
+.admin-main-content .ant-table-content::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.admin-main-content::-webkit-scrollbar-track,
+.admin-sidebar-menu::-webkit-scrollbar-track,
+.admin-main-content .ant-table-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-main-content::-webkit-scrollbar-thumb,
+.admin-sidebar-menu::-webkit-scrollbar-thumb,
+.admin-main-content .ant-table-content::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  transition: background 0.18s ease, border 0.18s ease;
+}
+
+/* 静止时隐藏滑块，用户进入可滚动区域后再显示，减少页面常驻滚动条的视觉干扰。 */
+.admin-main-content:hover::-webkit-scrollbar-thumb,
+.admin-main-content:focus-within::-webkit-scrollbar-thumb,
+.admin-sidebar-menu:hover::-webkit-scrollbar-thumb,
+.admin-sidebar-menu:focus-within::-webkit-scrollbar-thumb,
+.admin-main-content .ant-table-content:hover::-webkit-scrollbar-thumb,
+.admin-main-content .ant-table-content:focus-within::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.42);
+}
+
+.admin-main-content::-webkit-scrollbar-thumb:hover,
+.admin-sidebar-menu::-webkit-scrollbar-thumb:hover,
+.admin-main-content .ant-table-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.72);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.admin-main-content::-webkit-scrollbar-corner,
+.admin-sidebar-menu::-webkit-scrollbar-corner,
+.admin-main-content .ant-table-content::-webkit-scrollbar-corner {
+  background: transparent;
 }
