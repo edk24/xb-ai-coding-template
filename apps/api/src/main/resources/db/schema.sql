@@ -1,0 +1,191 @@
+CREATE TABLE IF NOT EXISTS departments (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  parent_id BIGINT NOT NULL DEFAULT 0,
+  name VARCHAR(100) NOT NULL,
+  leader VARCHAR(100) DEFAULT '',
+  phone VARCHAR(32) DEFAULT '',
+  sort INT NOT NULL DEFAULT 0,
+  status TINYINT NOT NULL DEFAULT 1,
+  remark VARCHAR(255) DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by BIGINT DEFAULT NULL,
+  updated_by BIGINT DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS roles (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  code VARCHAR(100) NOT NULL,
+  status TINYINT NOT NULL DEFAULT 1,
+  data_scope TINYINT NOT NULL DEFAULT 2,
+  remark VARCHAR(255) DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by BIGINT DEFAULT NULL,
+  updated_by BIGINT DEFAULT NULL,
+  UNIQUE KEY uk_roles_name (name),
+  UNIQUE KEY uk_roles_code (code)
+);
+
+CREATE TABLE IF NOT EXISTS permissions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  parent_id BIGINT NOT NULL DEFAULT 0,
+  name VARCHAR(100) NOT NULL,
+  type VARCHAR(20) NOT NULL,
+  route_path VARCHAR(255) DEFAULT '',
+  component_path VARCHAR(255) DEFAULT '',
+  permission_key VARCHAR(120) NOT NULL,
+  icon VARCHAR(100) DEFAULT '',
+  sort INT NOT NULL DEFAULT 0,
+  hidden TINYINT NOT NULL DEFAULT 0,
+  status TINYINT NOT NULL DEFAULT 1,
+  remark VARCHAR(255) DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by BIGINT DEFAULT NULL,
+  updated_by BIGINT DEFAULT NULL,
+  UNIQUE KEY uk_permissions_key (permission_key)
+);
+
+CREATE TABLE IF NOT EXISTS admin_users (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  department_id BIGINT NOT NULL,
+  username VARCHAR(100) NOT NULL,
+  nickname VARCHAR(100) NOT NULL,
+  avatar VARCHAR(255) DEFAULT '',
+  phone VARCHAR(32) DEFAULT '',
+  email VARCHAR(120) DEFAULT '',
+  password_hash CHAR(32) NOT NULL,
+  salt VARCHAR(32) NOT NULL,
+  status TINYINT NOT NULL DEFAULT 1,
+  is_super TINYINT NOT NULL DEFAULT 0,
+  remark VARCHAR(255) DEFAULT '',
+  last_login_at DATETIME DEFAULT NULL,
+  last_login_ip VARCHAR(64) DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by BIGINT DEFAULT NULL,
+  updated_by BIGINT DEFAULT NULL,
+  UNIQUE KEY uk_admin_users_username (username)
+);
+
+CREATE TABLE IF NOT EXISTS admin_user_roles (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  admin_user_id BIGINT NOT NULL,
+  role_id BIGINT NOT NULL,
+  UNIQUE KEY uk_admin_user_role (admin_user_id, role_id)
+);
+
+CREATE TABLE IF NOT EXISTS role_permissions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  role_id BIGINT NOT NULL,
+  permission_id BIGINT NOT NULL,
+  UNIQUE KEY uk_role_permission (role_id, permission_id)
+);
+
+CREATE TABLE IF NOT EXISTS login_logs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  admin_user_id BIGINT DEFAULT NULL,
+  username_snapshot VARCHAR(100) NOT NULL,
+  ip VARCHAR(64) DEFAULT '',
+  user_agent VARCHAR(255) DEFAULT '',
+  status TINYINT NOT NULL DEFAULT 1,
+  fail_reason VARCHAR(255) DEFAULT '',
+  login_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS operation_logs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  admin_user_id BIGINT DEFAULT NULL,
+  module VARCHAR(100) NOT NULL,
+  action VARCHAR(100) NOT NULL,
+  method VARCHAR(20) NOT NULL,
+  path VARCHAR(255) NOT NULL,
+  request_summary TEXT,
+  response_summary TEXT,
+  ip VARCHAR(64) DEFAULT '',
+  operated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS config_items (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  group_name VARCHAR(100) NOT NULL DEFAULT '',
+  `key` VARCHAR(120) NOT NULL,
+  `value` TEXT,
+  type VARCHAR(30) NOT NULL DEFAULT 'input',
+  options TEXT,
+  sort INT NOT NULL DEFAULT 0,
+  status TINYINT NOT NULL DEFAULT 1,
+  remark VARCHAR(255) DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by BIGINT DEFAULT NULL,
+  updated_by BIGINT DEFAULT NULL,
+  UNIQUE KEY uk_config_items_key (`key`),
+  INDEX idx_group_name (group_name)
+);
+
+CREATE TABLE IF NOT EXISTS attachments (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  admin_user_id BIGINT NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  size BIGINT NOT NULL,
+  mime_type VARCHAR(127) DEFAULT '',
+  storage_type VARCHAR(20) NOT NULL DEFAULT 'local',
+  path VARCHAR(500) NOT NULL,
+  url VARCHAR(500) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user (admin_user_id),
+  INDEX idx_type (storage_type)
+);
+
+CREATE TABLE IF NOT EXISTS scheduled_jobs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  code VARCHAR(100) NOT NULL,
+  job_key VARCHAR(120) NOT NULL,
+  cron_expression VARCHAR(120) NOT NULL,
+  params TEXT,
+  status TINYINT NOT NULL DEFAULT 1,
+  allow_manual TINYINT NOT NULL DEFAULT 1,
+  lock_at_most_seconds INT NOT NULL DEFAULT 600,
+  remark VARCHAR(255) DEFAULT '',
+  last_run_at DATETIME DEFAULT NULL,
+  next_run_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  created_by BIGINT DEFAULT NULL,
+  updated_by BIGINT DEFAULT NULL,
+  UNIQUE KEY uk_scheduled_jobs_code (code),
+  INDEX idx_scheduled_jobs_status (status),
+  INDEX idx_scheduled_jobs_job_key (job_key)
+);
+
+CREATE TABLE IF NOT EXISTS scheduled_job_logs (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  scheduled_job_id BIGINT NOT NULL,
+  job_code VARCHAR(100) NOT NULL,
+  job_key VARCHAR(120) NOT NULL,
+  trigger_type VARCHAR(20) NOT NULL,
+  instance_id VARCHAR(120) DEFAULT '',
+  status VARCHAR(20) NOT NULL,
+  started_at DATETIME NOT NULL,
+  ended_at DATETIME DEFAULT NULL,
+  duration_ms BIGINT NOT NULL DEFAULT 0,
+  output_summary TEXT,
+  error_message TEXT,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_scheduled_job_logs_job (scheduled_job_id),
+  INDEX idx_scheduled_job_logs_started (started_at),
+  INDEX idx_scheduled_job_logs_status (status)
+);
+
+CREATE TABLE IF NOT EXISTS shedlock (
+  name VARCHAR(64) NOT NULL,
+  lock_until TIMESTAMP(3) NOT NULL,
+  locked_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  locked_by VARCHAR(255) NOT NULL,
+  PRIMARY KEY (name)
+);

@@ -7,15 +7,12 @@
     "dev:admin": "pnpm --filter admin dev",
     "build:admin": "pnpm --filter admin build",
     "preview:admin": "pnpm --filter admin preview",
+    "api:build": "docker compose build api",
+    "api:test": "cd apps/api && ./mvnw test",
     "api:up": "docker compose up -d api mysql",
     "api:down": "docker compose down",
     "api:logs": "docker compose logs -f api",
-    "api:install": "docker compose run --rm composer install --working-dir=apps/api",
-    "lint": "pnpm --filter admin lint",
-    "api:migrate": "docker compose run --rm api php think migrate:run",
-    "api:migrate:rollback": "docker compose run --rm api php think migrate:rollback",
-    "api:migrate:status": "docker compose run --rm api php think migrate:status",
-    "api:seed": "docker compose run --rm api php think seed:run"
+    "lint": "pnpm --filter admin lint"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["esbuild"]

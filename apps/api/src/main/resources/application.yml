@@ -1,0 +1,31 @@
+server:
+  port: ${SERVER_PORT:8000}
+
+spring:
+  application:
+    name: admin-api
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3309/admin_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${SPRING_DATASOURCE_USERNAME:admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
+      data-locations: classpath:db/data.sql
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+
+admin-api:
+  jwt-secret: ${JWT_SECRET:local-dev-admin-system-secret-change-me}
+  jwt-expire-seconds: ${JWT_EXPIRE_SECONDS:7200}
+  upload-root: ${UPLOAD_ROOT:storage/attachments}
+  upload-url-prefix: /storage/attachments
+  attachment-max-size: ${ATTACHMENT_MAX_SIZE:20971520}
+  attachment-allowed-extensions: ${ATTACHMENT_ALLOWED_EXTENSIONS:jpg,jpeg,png,gif,bmp,webp,doc,docx,xls,xlsx,pdf,txt,zip,rar,mp4,avi}

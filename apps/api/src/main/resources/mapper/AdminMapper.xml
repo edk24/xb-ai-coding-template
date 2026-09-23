@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hrs.admin.mapper.AdminMapper">
+  <select id="selectAdminUsers" resultType="map">
+    SELECT u.*, d.name AS department_name
+    FROM admin_users u
+    LEFT JOIN departments d ON d.id = u.department_id
+    ORDER BY u.id ASC
+  </select>
+
+  <select id="selectAdminUserRoles" resultType="map">
+    SELECT aur.admin_user_id, r.id, r.name
+    FROM admin_user_roles aur
+    JOIN roles r ON r.id = aur.role_id
+    ORDER BY r.id ASC
+  </select>
+
+  <select id="selectRoles" resultType="map">
+    SELECT * FROM roles ORDER BY id ASC
+  </select>
+
+  <select id="selectRolePermissions" resultType="map">
+    SELECT role_id, permission_id FROM role_permissions ORDER BY permission_id ASC
+  </select>
+
+  <select id="selectDepartments" resultType="map">
+    SELECT * FROM departments ORDER BY sort ASC, id ASC
+  </select>
+
+  <select id="selectPermissions" resultType="map">
+    <choose>
+      <when test="userId != null">
+        SELECT DISTINCT p.* FROM permissions p
+        JOIN role_permissions rp ON rp.permission_id = p.id
+        JOIN admin_user_roles aur ON aur.role_id = rp.role_id
+        WHERE aur.admin_user_id = #{userId}
+        <if test="enabledOnly">AND p.status = 1</if>
+        ORDER BY p.sort ASC, p.id ASC
+      </when>
+      <otherwise>
+        SELECT * FROM permissions
+        <if test="enabledOnly">WHERE status = 1</if>
+        ORDER BY sort ASC, id ASC
+      </otherwise>
+    </choose>
+  </select>
+
+  <select id="selectConfigItems" resultType="map">
+    SELECT * FROM config_items ORDER BY group_name ASC, sort ASC, id ASC
+  </select>
+
+  <select id="selectAttachments" resultType="map">
+    SELECT * FROM attachments
+    <if test="storageType != null and storageType != ''">WHERE storage_type = #{storageType}</if>
+    ORDER BY id DESC LIMIT #{limit} OFFSET #{offset}
+  </select>
+
+  <select id="countAttachments" resultType="long">
+    SELECT COUNT(*) FROM attachments
+    <if test="storageType != null and storageType != ''">WHERE storage_type = #{storageType}</if>
+  </select>
+
+  <select id="selectLoginLogs" resultType="map">
+    SELECT * FROM login_logs ORDER BY id DESC LIMIT 50
+  </select>
+
+  <select id="selectOperationLogs" resultType="map">
+    SELECT * FROM operation_logs ORDER BY id DESC LIMIT 50
+  </select>
+
+  <select id="countAdminUsers" resultType="long">
+    SELECT COUNT(*) FROM admin_users
+  </select>
+
+  <select id="countRoles" resultType="long">
+    SELECT COUNT(*) FROM roles
+  </select>
+
+  <select id="countDepartments" resultType="long">
+    SELECT COUNT(*) FROM departments
+  </select>
+
+  <select id="countPermissions" resultType="long">
+    SELECT COUNT(*) FROM permissions
+  </select>
+
+  <select id="selectConfigValue" resultType="string">
+    SELECT `value` FROM config_items WHERE `key` = #{key} AND status = 1
+  </select>
+</mapper>
