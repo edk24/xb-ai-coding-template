@@ -7,8 +7,11 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:db/schema.sql
-      data-locations: classpath:db/data.sql
+      # 与生产同样的脚本，只是路径改到 Flyway 迁移目录；测试用 H2，不跑 Flyway
+      schema-locations: classpath:db/migration/V1__init_schema.sql
+      data-locations: classpath:db/migration/V2__init_data.sql
+  flyway:
+    enabled: false
 
 admin-api:
   jwt-secret: test-secret-for-integration
