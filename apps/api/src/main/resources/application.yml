@@ -22,8 +22,8 @@ spring:
     baseline-version: 0
   servlet:
     multipart:
-      max-file-size: 20MB
-      max-request-size: 20MB
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
@@ -33,5 +33,5 @@ admin-api:
   jwt-expire-seconds: ${JWT_EXPIRE_SECONDS:7200}
   upload-root: ${UPLOAD_ROOT:storage/attachments}
   upload-url-prefix: /storage/attachments
-  attachment-max-size: ${ATTACHMENT_MAX_SIZE:20971520}
-  attachment-allowed-extensions: ${ATTACHMENT_ALLOWED_EXTENSIONS:jpg,jpeg,png,gif,bmp,webp,doc,docx,xls,xlsx,pdf,txt,zip,rar,mp4,avi}
+  attachment-max-size: ${ATTACHMENT_MAX_SIZE:52428800}
+  attachment-allowed-extensions: ${ATTACHMENT_ALLOWED_EXTENSIONS:jpg,jpeg,png,gif,bmp,webp,doc,docx,xls,xlsx,pdf,txt,zip,rar,mp4,avi,mp3,m4a,aac,wav}

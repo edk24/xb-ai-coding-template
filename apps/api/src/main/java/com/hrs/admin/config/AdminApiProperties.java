@@ -8,8 +8,8 @@ public class AdminApiProperties {
     private long jwtExpireSeconds = 7200;
     private String uploadRoot = "storage/attachments";
     private String uploadUrlPrefix = "/storage/attachments";
-    private long attachmentMaxSize = 20971520;
-    private String attachmentAllowedExtensions = "jpg,jpeg,png,gif,bmp,webp,doc,docx,xls,xlsx,pdf,txt,zip,rar,mp4,avi";
+    private long attachmentMaxSize = 52428800;
+    private String attachmentAllowedExtensions = "jpg,jpeg,png,gif,bmp,webp,doc,docx,xls,xlsx,pdf,txt,zip,rar,mp4,avi,mp3,m4a,aac,wav";
 
     public String getJwtSecret() {
         return jwtSecret;
