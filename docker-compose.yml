@@ -2,17 +2,17 @@ services:
   api:
     build:
       context: ./apps/api
-    working_dir: /app
-    volumes:
-      - ./apps/api:/app
-    command: sh -c "php -S 0.0.0.0:8000 -t public"
     environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
-      DB_NAME: admin_system
-      DB_USER: admin
-      DB_PASS: admin123
-      DB_CHARSET: utf8mb4
+      SERVER_PORT: 8000
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/admin_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin123
+      JWT_SECRET: local-dev-admin-system-secret-change-me
+      JWT_EXPIRE_SECONDS: 7200
+      UPLOAD_ROOT: /app/storage/attachments
+    volumes:
+      - api_storage:/app/storage
     ports:
       - "8000:8000"
     depends_on:
@@ -20,8 +20,7 @@ services:
         condition: service_healthy
 
   mysql:
-    image: mysql:8.4
-    command: --mysql-native-password=ON --authentication-policy=mysql_native_password
+    image: mysql:8.0
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -31,18 +30,13 @@ services:
     ports:
       - "3309:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql80_data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin", "-padmin123"]
       interval: 5s
       timeout: 3s
       retries: 20
 
-  composer:
-    image: composer:latest
-    working_dir: /workspace
-    volumes:
-      - ./:/workspace
-
 volumes:
-  mysql_data:
+  api_storage:
+  mysql80_data:
