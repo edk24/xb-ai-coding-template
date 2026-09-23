@@ -72,6 +72,12 @@ function buildMenuItems(items: Permission[] | null): MenuProps['items'] {
     })
 }
 
+function getAvatarSrc(avatar?: string): string | undefined {
+  // AntD Avatar 只有拿到有效 src 才展示图片，空值交给默认图标兜底。
+  const src = avatar?.trim()
+  return src || undefined
+}
+
 export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -80,6 +86,7 @@ export default function AdminLayout() {
   const { mode, toggle: toggleTheme } = useThemeStore()
   const [menuItems, setMenuItems] = useState<MenuProps['items']>([])
   const [collapsed, setCollapsed] = useState(false)
+  const avatarSrc = getAvatarSrc(user?.avatar)
 
   useEffect(() => {
     getPermissionsTreeApi().then((res) => {
@@ -200,7 +207,7 @@ export default function AdminLayout() {
           />
           <Dropdown menu={{ items: userMenuItems, onClick: onUserMenuClick }} placement="bottomRight">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <Avatar size={32} icon={<UserOutlined />} />
+              <Avatar size={32} src={avatarSrc} icon={<UserOutlined />} />
               <Text style={{ color: mode === 'dark' ? '#fff' : undefined }}>{user?.nickname || user?.username}</Text>
             </div>
           </Dropdown>

@@ -13,6 +13,7 @@ import { getRolesApi } from '../../../api/roles'
 import type { Role } from '../../../api/roles'
 import { getDepartmentsTreeApi } from '../../../api/departments'
 import type { Department } from '../../../api/departments'
+import AvatarUpload from '../../../components/AvatarUpload'
 
 export default function AdminUsers() {
   const [list, setList] = useState<AdminUser[]>([])
@@ -132,7 +133,7 @@ export default function AdminUsers() {
     { title: 'ID', dataIndex: 'id', width: 64 },
     {
       title: '头像', dataIndex: 'avatar', width: 56,
-      render: (_: string) => <Avatar size={32} icon={<UserOutlined />} />,
+      render: (avatar: string) => <Avatar size={32} src={avatar || undefined} icon={<UserOutlined />} />,
     },
     { title: '登录账号', dataIndex: 'username', width: 120 },
     { title: '昵称', dataIndex: 'nickname', width: 120 },
@@ -210,7 +211,7 @@ export default function AdminUsers() {
           </Form.Item>
           <Form.Item name="phone" label="手机号"><Input /></Form.Item>
           <Form.Item name="email" label="邮箱"><Input /></Form.Item>
-          <Form.Item name="avatar" label="头像"><Input placeholder="头像 URL" /></Form.Item>
+          <Form.Item name="avatar" label="头像"><AvatarUpload /></Form.Item>
           <Form.Item name="remark" label="备注"><Input.TextArea rows={2} /></Form.Item>
           <Form.Item name="status" label="状态" valuePropName="checked" getValueFromEvent={(e) => e ? 1 : 0}>
             <Switch checkedChildren="启用" unCheckedChildren="禁用" />

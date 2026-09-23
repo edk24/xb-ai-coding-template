@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Form, Input, Button, Card, Typography, App } from 'antd'
 import { useAuthStore } from '../../store/auth'
 import { updateProfileApi, profileApi } from '../../api/auth'
+import AvatarUpload from '../../components/AvatarUpload'
 
 interface ProfileForm {
   nickname: string
@@ -66,7 +67,7 @@ export default function Profile() {
           <Input />
         </Form.Item>
         <Form.Item name="avatar" label="头像">
-          <Input placeholder="头像 URL" />
+          <AvatarUpload />
         </Form.Item>
         <Form.Item name="phone" label="手机号">
           <Input />
