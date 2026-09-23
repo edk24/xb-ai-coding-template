@@ -1,8 +1,11 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/auth'
 
+/** 后台 API 地址由环境变量控制，未配置时保持同域 /admin-api 的部署方式 */
+const apiBaseURL = import.meta.env.VITE_API_BASE_URL || '/admin-api'
+
 const client = axios.create({
-  baseURL: '/admin-api',
+  baseURL: apiBaseURL,
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
@@ -27,7 +30,8 @@ function onUnauthorized(message?: string) {
   if (message) {
     sessionStorage.setItem('auth_message', message)
   }
-  window.location.href = '/login'
+  // 使用 HashRouter，跳转必须带上部署前缀，例如 /backend/#/login
+  window.location.href = `${import.meta.env.BASE_URL}#/login`
 }
 
 client.interceptors.response.use(

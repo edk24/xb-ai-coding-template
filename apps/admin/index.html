@@ -2,7 +2,8 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <!-- 使用 Vite 注入的 base，部署到子路径（如 /backend/）时静态资源路径才正确 -->
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>后台管理系统</title>
   </head>
