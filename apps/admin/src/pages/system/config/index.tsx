@@ -8,8 +8,9 @@ import {
   getConfigItemsApi, createConfigItemApi, updateConfigItemApi, deleteConfigItemApi, batchSaveConfigItemsApi,
 } from '../../../api/config'
 import type {
-  BatchSaveItem, ConfigItem, ConfigItemType, CreateConfigItemParams,
+  ConfigItem, ConfigItemType, CreateConfigItemParams,
 } from '../../../api/config'
+import { buildConfigSaveBatch } from './config-save'
 
 const typeLabels: Record<ConfigItemType, string> = {
   input: '输入框', textarea: '文本域', number: '数字',
@@ -33,23 +34,6 @@ function parseOptions(raw: string): { label: string; value: string }[] {
   } catch {
     return []
   }
-}
-
-/** 表单控件值 → 配置项存储值：开关统一存 '1'/'0'，多选/多图存 JSON 字符串，空值存 '' */
-function serializeConfigValue(item: ConfigItem, raw: unknown): unknown {
-  if (item.type === 'switch') return raw ? '1' : '0'
-  if (raw === undefined || raw === null) return ''
-  if (Array.isArray(raw)) return JSON.stringify(raw)
-  // ColorPicker 的取值是颜色对象，取其十六进制字符串
-  if (typeof raw === 'object' && typeof (raw as { toHexString?: () => string }).toHexString === 'function') {
-    return (raw as { toHexString: () => string }).toHexString()
-  }
-  return raw
-}
-
-/** 组装某个分组的批量保存参数：只包含该分组的配置项 */
-function buildConfigSaveBatch(groupItems: ConfigItem[], values: Record<string, unknown>): BatchSaveItem[] {
-  return groupItems.map((item) => ({ id: item.id, value: serializeConfigValue(item, values[item.key]) }))
 }
 
 export default function Config() {
@@ -103,7 +87,8 @@ export default function Config() {
           } else if (item.type === 'number') {
             values[item.key] = item.value !== '' ? Number(item.value) : undefined
           } else if (item.type === 'switch') {
-            values[item.key] = item.value === '1'
+            // 兼容早期批量保存写下的 true/false，统一按 1/0 回写
+            values[item.key] = item.value === '1' || item.value === 'true'
           } else if (item.type === 'color' && item.value) {
             values[item.key] = item.value
           } else {
@@ -232,6 +217,10 @@ export default function Config() {
       case 'rich_text':
         return <Input.TextArea rows={6} />
       default:
+        // 密码类配置不回显明文
+        if (item.key.endsWith('_password')) {
+          return <Input.Password autoComplete="new-password" />
+        }
         return <Input />
     }
   }
