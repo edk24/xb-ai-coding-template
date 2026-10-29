@@ -14,6 +14,8 @@ import type { Role } from '../../../api/roles'
 import { getDepartmentsTreeApi } from '../../../api/departments'
 import type { Department } from '../../../api/departments'
 import AvatarUpload from '../../../components/AvatarUpload'
+import Can from '../../../components/Can'
+import { PASSWORD_PATTERN, isValidPassword } from '../../../utils/password-policy'
 
 export default function AdminUsers() {
   const [list, setList] = useState<AdminUser[]>([])
@@ -117,14 +119,24 @@ export default function AdminUsers() {
       title: '重置密码',
       content: (
         <Input.Password
-          placeholder="留空则使用默认密码 123456"
+          placeholder="请输入新密码（8-64 位，需包含字母和数字）"
           onChange={(e) => { newPassword = e.target.value }}
           style={{ marginTop: 8 }}
         />
       ),
       onOk: async () => {
-        await resetPasswordApi(id, newPassword ? { new_password: newPassword } : {})
-        message.success('密码已重置')
+        if (!isValidPassword(newPassword)) {
+          message.error('新密码需 8-64 位且同时包含字母和数字')
+          // 抛出异常让弹窗保持打开，便于重新输入
+          throw new Error('invalid password')
+        }
+        try {
+          await resetPasswordApi(id, { new_password: newPassword })
+          message.success('密码已重置')
+        } catch (e: any) {
+          message.error(e?.response?.data?.message || '重置密码失败')
+          throw e
+        }
       },
     })
   }
@@ -154,13 +166,19 @@ export default function AdminUsers() {
       title: '操作', width: 200,
       render: (_: unknown, record: AdminUser) => (
         <Space>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>编辑</Button>
+          <Can permission="admin-users:update">
+            <Button type="link" size="small" onClick={() => openEdit(record)}>编辑</Button>
+          </Can>
           {record.is_super !== 1 && (
             <>
-              <Button type="link" size="small" onClick={() => handleResetPassword(record.id)}>重置密码</Button>
-              <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-                <Button type="link" size="small" danger>删除</Button>
-              </Popconfirm>
+              <Can permission="admin-users:reset-password">
+                <Button type="link" size="small" onClick={() => handleResetPassword(record.id)}>重置密码</Button>
+              </Can>
+              <Can permission="admin-users:delete">
+                <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
+                  <Button type="link" size="small" danger>删除</Button>
+                </Popconfirm>
+              </Can>
             </>
           )}
         </Space>
@@ -175,7 +193,14 @@ export default function AdminUsers() {
     ])
 
   return (
-    <Card title="管理员管理" extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增</Button>}>
+    <Card
+      title="管理员管理"
+      extra={
+        <Can permission="admin-users:create">
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增</Button>
+        </Can>
+      }
+    >
       <Table
         rowKey="id"
         columns={columns}
@@ -202,7 +227,7 @@ export default function AdminUsers() {
             <Input />
           </Form.Item>
           {!editingId && (
-            <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }, { min: 6, message: '密码至少 6 位' }]}>
+            <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码' }, { pattern: PASSWORD_PATTERN, message: '密码需 8-64 位且同时包含字母和数字' }]}>
               <Input.Password />
             </Form.Item>
           )}

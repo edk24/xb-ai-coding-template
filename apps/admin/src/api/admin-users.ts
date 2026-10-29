@@ -1,5 +1,4 @@
 import client from './client'
-import { hashPassword } from '../utils/password'
 
 export interface AdminUser {
   id: number
@@ -49,10 +48,11 @@ export function getAdminUsersApi() {
   )
 }
 
+/** 密码由后端校验并加密存储，前端直接发送明文 */
 export function createAdminUserApi(params: CreateAdminUserParams) {
   return client.post<{ code: number; message: string; data: AdminUser }>(
     '/admin-users',
-    { ...params, password: hashPassword(params.password) },
+    params,
   )
 }
 
@@ -70,12 +70,13 @@ export function deleteAdminUserApi(id: number) {
 }
 
 export interface ResetPasswordParams {
-  new_password?: string
+  /** 8-64 位且同时包含字母和数字，后端不再返回默认密码 */
+  new_password: string
 }
 
-export function resetPasswordApi(id: number, params?: ResetPasswordParams) {
-  return client.put<{ code: number; message: string; data: { new_password: string } }>(
+export function resetPasswordApi(id: number, params: ResetPasswordParams) {
+  return client.put<{ code: number; message: string }>(
     `/admin-users/${id}/reset-password`,
-    params?.new_password ? { new_password: hashPassword(params.new_password) } : {},
+    params,
   )
 }

@@ -25,9 +25,6 @@ importers:
       cos-js-sdk-v5:
         specifier: ^1.10.1
         version: 1.10.1
-      md5:
-        specifier: ^2.3.0
-        version: 2.3.0
       react:
         specifier: ^18.3.1
         version: 18.3.1
@@ -876,9 +873,6 @@ packages:
   caniuse-lite@1.0.30001790:
     resolution: {integrity: sha512-bOoxfJPyYo+ds6W0YfptaCWbFnJYjh2Y1Eow5lRv+vI2u8ganPZqNm1JwNh0t2ELQCqIWg4B3dWEusgAmsoyOw==}
 
-  charenc@0.0.2:
-    resolution: {integrity: sha512-yrLQ/yVUFXkzg7EDQsPieE/53+0RlaWTs+wBrvW36cyilJ2SaDWfl4Yj7MtLTXleV9uEKefbAGUPv2/iWSooRA==}
-
   clsx@2.1.1:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
@@ -905,9 +899,6 @@ packages:
 
   cos-js-sdk-v5@1.10.1:
     resolution: {integrity: sha512-a4SRfCY5g6Z35C7OWe9te/S1zk77rVQzfpvZ33gmTdJQzKxbNbEG7Aw/v453XwVMsQB352FIf7KRMm5Ya/wlZQ==}
-
-  crypt@0.0.2:
-    resolution: {integrity: sha512-mCxBlsHFYh9C+HVpiEacem8FEBnMXgU9gy4zmNC+SXAZNB/1idgp/aulFJ4FgCi7GPEVbfyng092GqL2k2rmow==}
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
@@ -1074,9 +1065,6 @@ packages:
   inherits@2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
 
-  is-buffer@1.1.6:
-    resolution: {integrity: sha512-NcdALwpXkTm5Zvvbk7owOUSvVvBKDgKP5/ewfXEznmQFfs4ZRmanOeKBTjRVjka3QFoN6XJ+9F3USqfHqTaU5w==}
-
   is-class-hotfix@0.0.6:
     resolution: {integrity: sha512-0n+pzCC6ICtVr/WXnN2f03TK/3BfXY7me4cjCAqT8TYXEl0+JBRoqBo94JJHXcyDSLUeWbNX8Fvy5g5RJdAstQ==}
 
@@ -1209,9 +1197,6 @@ packages:
   math-intrinsics@1.1.0:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
-
-  md5@2.3.0:
-    resolution: {integrity: sha512-T1GITYmFaKuO91vxyoQMFETst+O71VUPEU3ze5GNzDm0OWdP8v1ziTaAEPUr/3kLsY3Sftgz242A1SetQiDL7g==}
 
   merge-descriptors@1.0.3:
     resolution: {integrity: sha512-gaNvAS7TZ897/rVaZ0nMtAyxNyi/pdbjbAwUpFQpN70GqnVfOiXpeUUMKRBmzXaSQ8DdTX4/0ms62r2K+hE6mQ==}
@@ -2419,8 +2404,6 @@ snapshots:
 
   caniuse-lite@1.0.30001790: {}
 
-  charenc@0.0.2: {}
-
   clsx@2.1.1: {}
 
   combined-stream@1.0.8:
@@ -2440,8 +2423,6 @@ snapshots:
   cos-js-sdk-v5@1.10.1:
     dependencies:
       fast-xml-parser: 4.5.0
-
-  crypt@0.0.2: {}
 
   csstype@3.2.3: {}
 
@@ -2608,8 +2589,6 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  is-buffer@1.1.6: {}
-
   is-class-hotfix@0.0.6: {}
 
   is-extendable@0.1.1: {}
@@ -2704,12 +2683,6 @@ snapshots:
       yallist: 3.1.1
 
   math-intrinsics@1.1.0: {}
-
-  md5@2.3.0:
-    dependencies:
-      charenc: 0.0.2
-      crypt: 0.0.2
-      is-buffer: 1.1.6
 
   merge-descriptors@1.0.3: {}
 

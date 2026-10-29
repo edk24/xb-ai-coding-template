@@ -18,12 +18,11 @@ interface LoginForm {
 export default function Login() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const setToken = useAuthStore((s) => s.setToken)
   const setUser = useAuthStore((s) => s.setUser)
   const mode = useThemeStore((s) => s.mode)
   const { message } = App.useApp()
 
-  // 展示因 401 被重定向到登录页的原因
+  // 展示因 401 会话失效被重定向到登录页的原因
   useEffect(() => {
     const redirect = sessionStorage.getItem('auth_redirect')
     if (redirect === '401') {
@@ -46,12 +45,17 @@ export default function Login() {
         handleError(res.data.message || '登录失败，请检查账号密码')
         return
       }
-      const { token, user } = res.data.data
-      setToken(token)
+      const { user } = res.data.data
       setUser(user)
+      if (user.must_change_password) {
+        message.warning('请先修改初始密码')
+        navigate('/profile/password', { replace: true })
+        return
+      }
       message.success('登录成功')
       navigate('/dashboard', { replace: true })
     } catch (err) {
+      // 401 账号密码错误、429 登录过于频繁都直接展示后端提示
       const axiosErr = err as AxiosError<{ message: string }>
       const msg = axiosErr.response?.data?.message || '登录失败，请检查账号密码'
       handleError(msg)

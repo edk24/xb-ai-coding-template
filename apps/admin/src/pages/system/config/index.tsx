@@ -10,7 +10,8 @@ import {
 import type {
   ConfigItem, ConfigItemType, CreateConfigItemParams,
 } from '../../../api/config'
-import { buildConfigSaveBatch } from './config-save'
+import { buildConfigSaveBatch, isSensitiveConfigKey } from './config-save'
+import Can from '../../../components/Can'
 
 const typeLabels: Record<ConfigItemType, string> = {
   input: '输入框', textarea: '文本域', number: '数字',
@@ -57,6 +58,9 @@ export default function Config() {
   const [itemSaving, setItemSaving] = useState(false)
   const [itemForm] = Form.useForm()
   const [selectedType, setSelectedType] = useState<ConfigItemType>('input')
+  // 编辑敏感配置项时用于区分"已配置/未配置"的提示文案
+  const [editingHasValue, setEditingHasValue] = useState(false)
+  const itemKey = Form.useWatch('key', itemForm) as string | undefined
 
   // --- Group items by group_name for tabs ---
   const groups = useMemo(() => {
@@ -82,7 +86,10 @@ export default function Config() {
         // Set form values
         const values: Record<string, any> = {}
         data.forEach((item) => {
-          if (item.type === 'checkbox' || item.type === 'multi_image') {
+          if (isSensitiveConfigKey(item.key)) {
+            // 敏感项后端不返回明文，不回填表单；留空表示保持原值不变
+            values[item.key] = undefined
+          } else if (item.type === 'checkbox' || item.type === 'multi_image') {
             try { values[item.key] = JSON.parse(item.value || '[]') } catch { values[item.key] = [] }
           } else if (item.type === 'number') {
             values[item.key] = item.value !== '' ? Number(item.value) : undefined
@@ -119,10 +126,18 @@ export default function Config() {
     const fieldKeys = groupItems.map((item) => item.key)
     await form.validateFields(fieldKeys)
     const values = form.getFieldsValue(fieldKeys) as Record<string, unknown>
+    // 敏感项留空表示保持原值不变，不提交空值覆盖已保存的密钥
+    const sensitiveIds = new Set(
+      groupItems.filter((item) => isSensitiveConfigKey(item.key)).map((item) => item.id),
+    )
+    const batch = buildConfigSaveBatch(groupItems, values)
+      .filter((entry) => !sensitiveIds.has(entry.id) || !!entry.value)
     setSaving(true)
     try {
-      await batchSaveConfigItemsApi(buildConfigSaveBatch(groupItems, values))
+      await batchSaveConfigItemsApi(batch)
       message.success('配置已保存')
+      // 保存成功后清空敏感输入，避免下次保存重复提交
+      form.resetFields(fieldKeys.filter((key) => isSensitiveConfigKey(key)))
     } finally {
       setSaving(false)
     }
@@ -134,6 +149,7 @@ export default function Config() {
     itemForm.resetFields()
     itemForm.setFieldsValue({ status: 1, sort: 0, type: 'input', group_name: activeTab || '' })
     setSelectedType('input')
+    setEditingHasValue(false)
     setItemEditOpen(true)
   }
 
@@ -141,10 +157,12 @@ export default function Config() {
     setEditingItemId(record.id)
     itemForm.setFieldsValue({
       group_name: record.group_name, name: record.name, key: record.key,
-      value: record.value, type: record.type, options: record.options,
+      value: isSensitiveConfigKey(record.key) ? undefined : record.value,
+      type: record.type, options: record.options,
       sort: record.sort, status: record.status, remark: record.remark,
     })
     setSelectedType(record.type as ConfigItemType)
+    setEditingHasValue(!!record.has_value)
     setItemEditOpen(true)
   }
 
@@ -157,6 +175,10 @@ export default function Config() {
         key: values.key, value: values.value ?? '', type: values.type,
         options: values.options ?? '', sort: values.sort ?? 0,
         status: values.status ?? 1, remark: values.remark ?? '',
+      }
+      // 敏感项留空表示保持原值，不提交空串覆盖已保存的密钥
+      if (isSensitiveConfigKey(values.key) && !values.value) {
+        delete params.value
       }
       if (editingItemId) {
         await updateConfigItemApi(editingItemId, params)
@@ -217,9 +239,14 @@ export default function Config() {
       case 'rich_text':
         return <Input.TextArea rows={6} />
       default:
-        // 密码类配置不回显明文
-        if (item.key.endsWith('_password')) {
-          return <Input.Password autoComplete="new-password" />
+        // 敏感配置项掩码显示，不回显明文，留空表示保持原值不变
+        if (isSensitiveConfigKey(item.key)) {
+          return (
+            <Input.Password
+              autoComplete="new-password"
+              placeholder={item.has_value ? '已配置，留空保持不变' : '未配置'}
+            />
+          )
         }
         return <Input />
     }
@@ -237,10 +264,14 @@ export default function Config() {
       title: '操作', width: 120,
       render: (_: unknown, record: ConfigItem) => (
         <Space>
-          <Button type="link" size="small" onClick={() => openEditItem(record)}>编辑</Button>
-          <Popconfirm title="确定删除该配置项？" onConfirm={() => handleDeleteItem(record.id)}>
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
+          <Can permission="config:update">
+            <Button type="link" size="small" onClick={() => openEditItem(record)}>编辑</Button>
+          </Can>
+          <Can permission="config:delete">
+            <Popconfirm title="确定删除该配置项？" onConfirm={() => handleDeleteItem(record.id)}>
+              <Button type="link" size="small" danger>删除</Button>
+            </Popconfirm>
+          </Can>
         </Space>
       ),
     },
@@ -277,9 +308,11 @@ export default function Config() {
             })}
           </Form>
           {g.items.length > 0 && (
-            <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => handleSave(g.items)} size="large">
-              保存修改
-            </Button>
+            <Can permission="config:update">
+              <Button type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => handleSave(g.items)} size="large">
+                保存修改
+              </Button>
+            </Can>
           )}
         </div>
       ),
@@ -309,7 +342,9 @@ export default function Config() {
         onClose={() => setItemMgrOpen(false)}
         width={640}
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateItem}>新增配置项</Button>
+          <Can permission="config:create">
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateItem}>新增配置项</Button>
+          </Can>
         }
       >
         <Table rowKey="id" columns={itemColumns} dataSource={items} loading={loading} size="small" pagination={false} />
@@ -362,7 +397,16 @@ export default function Config() {
               <Input.TextArea rows={4} placeholder='[{"label":"选项A","value":"a"},{"label":"选项B","value":"b"}]' />
             </Form.Item>
           )}
-          <Form.Item name="value" label="默认值"><Input.TextArea rows={2} /></Form.Item>
+          <Form.Item name="value" label="默认值">
+            {isSensitiveConfigKey(itemKey || '')
+              ? (
+                <Input.Password
+                  autoComplete="new-password"
+                  placeholder={editingHasValue ? '已配置，留空保持不变' : '未配置'}
+                />
+              )
+              : <Input.TextArea rows={2} />}
+          </Form.Item>
           <Form.Item name="sort" label="排序"><InputNumber style={{ width: '100%' }} /></Form.Item>
           <Form.Item name="remark" label="说明"><Input.TextArea rows={2} /></Form.Item>
           <Form.Item name="status" label="状态">

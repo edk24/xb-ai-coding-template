@@ -1,5 +1,8 @@
 import client from './client'
 
+/** 上传接口单独放宽超时，大文件上传不受默认 15s 限制 */
+const UPLOAD_TIMEOUT = 5 * 60 * 1000
+
 export interface Attachment {
   id: number
   admin_user_id: number
@@ -7,8 +10,8 @@ export interface Attachment {
   size: number
   mime_type: string
   storage_type: string
-  path: string
-  url: string
+  /** 浏览器可直接访问的地址：本地附件是 /admin-api/attachments/{id}/file，COS 是 https 绝对地址 */
+  file_url: string
   created_at: string
 }
 
@@ -44,9 +47,16 @@ export interface RecordAttachmentParams {
   size: number
   mime_type: string
   storage_type: string
+  /** 对象存储中的对象 key，COS/OSS 直传仍需提交 */
   path: string
+  /** 访问地址，后端要求必须是 https 绝对地址或 /admin-api/ 同源路径 */
   url?: string
   cdn_url?: string
+}
+
+/** 附件访问地址白名单：https 绝对地址或同源 /admin-api 路径 */
+export function isValidFileUrl(url: string): boolean {
+  return url.startsWith('https://') || url.startsWith('/admin-api/')
 }
 
 export function getAttachmentsConfigApi() {
@@ -62,6 +72,7 @@ export function uploadAttachmentApi(file: File) {
   formData.append('file', file)
   return client.post<{ code: number; message: string; data: Attachment }>('/attachments/upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: UPLOAD_TIMEOUT,
   })
 }
 

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Form, Input, Button, Card, Modal, App } from 'antd'
+import { Form, Input, Button, Card, App } from 'antd'
 import { updatePasswordApi } from '../../api/auth'
 import { useAuthStore } from '../../store/auth'
+import { PASSWORD_PATTERN } from '../../utils/password-policy'
 
 interface PasswordForm {
   old_password: string
@@ -14,7 +15,7 @@ export default function Password() {
   const [form] = Form.useForm<PasswordForm>()
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const logout = useAuthStore((s) => s.logout)
+  const clear = useAuthStore((s) => s.clear)
   const { message } = App.useApp()
 
   const onFinish = async (values: PasswordForm) => {
@@ -25,16 +26,9 @@ export default function Password() {
         new_password: values.new_password,
         confirm_password: values.confirm_password,
       })
-      Modal.confirm({
-        title: '密码修改成功',
-        content: '请重新登录',
-        okText: '去登录',
-        cancelButtonProps: { style: { display: 'none' } },
-        onOk: () => {
-          logout()
-          navigate('/login', { replace: true })
-        },
-      })
+      clear()
+      message.success('密码已修改，请重新登录')
+      navigate('/login', { replace: true })
     } catch {
       message.error('密码修改失败')
     } finally {
@@ -61,7 +55,7 @@ export default function Password() {
           label="新密码"
           rules={[
             { required: true, message: '请输入新密码' },
-            { min: 6, message: '密码至少 6 位' },
+            { pattern: PASSWORD_PATTERN, message: '密码需 8-64 位且同时包含字母和数字' },
           ]}
         >
           <Input.Password />

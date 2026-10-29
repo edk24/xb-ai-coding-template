@@ -12,8 +12,10 @@ import {
   recordAttachmentApi,
   uploadAttachmentApi,
   deleteAttachmentApi,
+  isValidFileUrl,
 } from '../../api/attachments'
 import type { Attachment, AttachmentConfig } from '../../api/attachments'
+import Can from '../../components/Can'
 
 const STORAGE_TYPE_MAP: Record<string, { color: string; label: string }> = {
   local: { color: 'blue', label: '本地' },
@@ -34,6 +36,18 @@ function getFileExt(name: string): string {
 }
 
 const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
+
+/** 对象 key → 访问地址：优先 CDN 域名，未配置时回落到对象存储默认域名（后端要求 https 绝对地址） */
+function buildCloudFileUrl(cloudType: string, bucket: string, region: string, objectKey: string, cdnUrl: string): string {
+  const key = objectKey.replace(/^\/+/, '')
+  if (cdnUrl) {
+    return `${cdnUrl.replace(/\/+$/, '')}/${key}`
+  }
+  if (cloudType === 'cos') {
+    return `https://${bucket}.cos.${region}.myqcloud.com/${key}`
+  }
+  return `https://${bucket}.${region}.aliyuncs.com/${key}`
+}
 
 export default function Attachments() {
   const [list, setList] = useState<Attachment[]>([])
@@ -66,9 +80,13 @@ export default function Attachments() {
   }, [])
 
   const handleDelete = async (id: number) => {
-    await deleteAttachmentApi(id)
-    message.success('附件已删除')
-    loadList()
+    try {
+      await deleteAttachmentApi(id)
+      message.success('附件已删除')
+      loadList()
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '删除失败')
+    }
   }
 
   /** 本地上传 */
@@ -123,9 +141,11 @@ export default function Attachments() {
         await client.put(objectKey, file)
       }
 
-      const fileUrl = cdn_url
-        ? `${cdn_url.replace(/\/+$/, '')}/${objectKey}`
-        : `${path_prefix}/${filename}`
+      const fileUrl = buildCloudFileUrl(cloudType, bucket, region, objectKey, cdn_url)
+      if (!isValidFileUrl(fileUrl)) {
+        message.error('附件访问地址必须为 https 或 /admin-api/ 路径')
+        return false
+      }
 
       await recordAttachmentApi({
         name: file.name,
@@ -180,12 +200,12 @@ export default function Attachments() {
         const isImage = IMAGE_EXTS.includes(ext)
         return (
           <Space>
-            {isImage && record.url ? (
-              <img src={record.url} alt={text} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+            {isImage && record.file_url ? (
+              <img src={record.file_url} alt={text} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
             ) : (
               <PaperClipOutlined style={{ fontSize: 20 }} />
             )}
-            <a href={record.url} target="_blank" rel="noopener noreferrer" style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+            <a href={record.file_url} target="_blank" rel="noopener noreferrer" style={{ maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
               {text}
             </a>
           </Space>
@@ -204,11 +224,13 @@ export default function Attachments() {
       render: (_: unknown, record: Attachment) => (
         <Space size={4}>
           <Button type="link" size="small" icon={<LinkOutlined />} onClick={() => {
-            navigator.clipboard.writeText(record.url).then(() => message.success('链接已复制'))
+            navigator.clipboard.writeText(record.file_url).then(() => message.success('链接已复制'))
           }}>复制链接</Button>
-          <Popconfirm title="确定删除该附件？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
-          </Popconfirm>
+          <Can permission="attachments:delete">
+            <Popconfirm title="确定删除该附件？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" size="small" danger icon={<DeleteOutlined />}>删除</Button>
+            </Popconfirm>
+          </Can>
         </Space>
       ),
     },
@@ -225,10 +247,12 @@ export default function Attachments() {
             <Select.Option value="cos">腾讯云 COS</Select.Option>
             <Select.Option value="oss">阿里云 OSS</Select.Option>
           </Select>
-          <Button type="primary" icon={<UploadOutlined />} onClick={() => {
-            setUploadFileList([])
-            setUploadModalOpen(true)
-          }}>上传附件</Button>
+          <Can permission="attachments:upload">
+            <Button type="primary" icon={<UploadOutlined />} onClick={() => {
+              setUploadFileList([])
+              setUploadModalOpen(true)
+            }}>上传附件</Button>
+          </Can>
         </Space>
 
         <Table

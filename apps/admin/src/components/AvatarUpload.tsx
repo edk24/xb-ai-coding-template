@@ -29,7 +29,7 @@ export default function AvatarUpload({ value, onChange }: AvatarUploadProps) {
   const [uploading, setUploading] = useState(false)
   const { message } = App.useApp()
 
-  // 上传成功后只把后端返回的访问 URL 写回 Form 字段，保存接口仍沿用 avatar 字符串。
+  // 上传成功后只把后端返回的访问地址（file_url）写回 Form 字段，保存接口仍沿用 avatar 字符串。
   const uploadAvatar = async (file: File) => {
     if (!isImageFile(file)) {
       message.error('请选择图片文件')
@@ -39,7 +39,7 @@ export default function AvatarUpload({ value, onChange }: AvatarUploadProps) {
     setUploading(true)
     try {
       const res = await uploadAttachmentApi(file)
-      onChange?.(res.data.data.url)
+      onChange?.(res.data.data.file_url)
       message.success('头像已上传')
     } catch (e: any) {
       message.error(e?.response?.data?.message || '头像上传失败')

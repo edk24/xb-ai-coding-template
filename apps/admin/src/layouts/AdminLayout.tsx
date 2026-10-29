@@ -77,21 +77,14 @@ function buildMenuItems(items: Permission[] | null, level = 0): MenuProps['items
     })
 }
 
-function getAvatarSrc(avatar?: string): string | undefined {
-  // AntD Avatar 只有拿到有效 src 才展示图片，空值交给默认图标兜底。
-  const src = avatar?.trim()
-  return src || undefined
-}
-
 export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const user = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
+  const clear = useAuthStore((s) => s.clear)
   const { mode, toggle: toggleTheme } = useThemeStore()
   const [menuItems, setMenuItems] = useState<MenuProps['items']>([])
   const [collapsed, setCollapsed] = useState(false)
-  const avatarSrc = getAvatarSrc(user?.avatar)
 
   useEffect(() => {
     getMenuTreeApi().then((res) => {
@@ -129,8 +122,9 @@ export default function AdminLayout() {
       okText: '退出',
       cancelText: '取消',
       onOk: async () => {
+        // 先通知后端销毁会话，失败也继续清理本地状态
         try { await logoutApi() } catch { /* ignore */ }
-        logout()
+        clear()
         navigate('/login', { replace: true })
       },
     })
@@ -214,7 +208,7 @@ export default function AdminLayout() {
           />
           <Dropdown menu={{ items: userMenuItems, onClick: onUserMenuClick }} placement="bottomRight">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <Avatar size={32} src={avatarSrc} icon={<UserOutlined />} />
+              <Avatar size={32} src={user?.avatar || undefined} icon={<UserOutlined />} />
               <Text style={{ color: mode === 'dark' ? '#fff' : undefined }}>{user?.nickname || user?.username}</Text>
             </div>
           </Dropdown>

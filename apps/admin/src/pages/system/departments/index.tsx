@@ -7,6 +7,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { getDepartmentsTreeApi, createDepartmentApi, updateDepartmentApi, deleteDepartmentApi } from '../../../api/departments'
 import type { Department, CreateDepartmentParams } from '../../../api/departments'
+import Can from '../../../components/Can'
 
 export default function Departments() {
   const [treeData, setTreeData] = useState<Department[]>([])
@@ -124,12 +125,18 @@ export default function Departments() {
       width: 220,
       render: (_: unknown, record: Department) => (
         <Space size={4}>
-          <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => openCreate(record.id)} />
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+          <Can permission="departments:create">
+            <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => openCreate(record.id)} />
+          </Can>
+          <Can permission="departments:update">
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+          </Can>
           {record.id !== 1 && (
-            <Popconfirm title="确定删除？子部门和管理员将被校验" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
+            <Can permission="departments:delete">
+              <Popconfirm title="确定删除？子部门和管理员将被校验" onConfirm={() => handleDelete(record.id)}>
+                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            </Can>
           )}
         </Space>
       ),
@@ -139,7 +146,11 @@ export default function Departments() {
   return (
     <Card
       title="部门管理"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate(0)}>新增根部门</Button>}
+      extra={
+        <Can permission="departments:create">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate(0)}>新增根部门</Button>
+        </Can>
+      }
     >
       <Table
         columns={columns}

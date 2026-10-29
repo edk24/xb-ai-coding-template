@@ -17,6 +17,8 @@ import {
 import type {
   ScheduledJob, ScheduledJobHandlerOption, ScheduledJobLog, ScheduledJobParams,
 } from '../../../api/scheduled-jobs'
+import Can from '../../../components/Can'
+import { usePermission } from '../../../utils/permission'
 
 const statusMap: Record<string, { text: string; color: string }> = {
   running: { text: '执行中', color: 'processing' },
@@ -26,6 +28,9 @@ const statusMap: Record<string, { text: string; color: string }> = {
 
 export default function ScheduledJobs() {
   const { message } = App.useApp()
+  const { has } = usePermission()
+  // 启用/停用、允许手动执行都依赖编辑权限，无权限时只读展示，避免点击后吃 403
+  const canUpdate = has('scheduled-jobs:update')
   const [jobs, setJobs] = useState<ScheduledJob[]>([])
   const [handlers, setHandlers] = useState<ScheduledJobHandlerOption[]>([])
   const [logs, setLogs] = useState<ScheduledJobLog[]>([])
@@ -164,6 +169,7 @@ export default function ScheduledJobs() {
           checked={record.status === 1}
           checkedChildren="启用"
           unCheckedChildren="停用"
+          disabled={!canUpdate}
           onChange={(checked) => handleStatusChange(record, checked)}
         />
       ),
@@ -174,21 +180,27 @@ export default function ScheduledJobs() {
       title: '操作', width: 230, fixed: 'right' as const,
       render: (_: unknown, record: ScheduledJob) => (
         <Space>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>编辑</Button>
+          <Can permission="scheduled-jobs:update">
+            <Button type="link" size="small" onClick={() => openEdit(record)}>编辑</Button>
+          </Can>
           <Button type="link" size="small" icon={<FileTextOutlined />} onClick={() => openLogs(record)}>日志</Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<PlayCircleOutlined />}
-            disabled={record.allow_manual !== 1}
-            loading={runningId === record.id}
-            onClick={() => handleRun(record)}
-          >
-            执行
-          </Button>
-          <Popconfirm title="确定删除该任务？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" size="small" danger>删除</Button>
-          </Popconfirm>
+          <Can permission="scheduled-jobs:run">
+            <Button
+              type="link"
+              size="small"
+              icon={<PlayCircleOutlined />}
+              disabled={record.allow_manual !== 1}
+              loading={runningId === record.id}
+              onClick={() => handleRun(record)}
+            >
+              执行
+            </Button>
+          </Can>
+          <Can permission="scheduled-jobs:delete">
+            <Popconfirm title="确定删除该任务？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" size="small" danger>删除</Button>
+            </Popconfirm>
+          </Can>
         </Space>
       ),
     },
@@ -232,7 +244,11 @@ export default function ScheduledJobs() {
   return (
     <Card
       title="定时任务"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增任务</Button>}
+      extra={
+        <Can permission="scheduled-jobs:create">
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增任务</Button>
+        </Can>
+      }
     >
       <Table
         rowKey="id"
@@ -285,10 +301,10 @@ export default function ScheduledJobs() {
             <Input.TextArea rows={2} />
           </Form.Item>
           <Form.Item name="status" label="状态" valuePropName="checked">
-            <Switch checkedChildren="启用" unCheckedChildren="停用" />
+            <Switch checkedChildren="启用" unCheckedChildren="停用" disabled={!canUpdate} />
           </Form.Item>
           <Form.Item name="allow_manual" label="允许手动执行" valuePropName="checked">
-            <Switch checkedChildren="允许" unCheckedChildren="禁用" />
+            <Switch checkedChildren="允许" unCheckedChildren="禁用" disabled={!canUpdate} />
           </Form.Item>
         </Form>
       </Drawer>

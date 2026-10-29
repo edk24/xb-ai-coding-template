@@ -18,6 +18,8 @@ export interface ConfigItem {
   status: number
   remark: string
   created_at: string
+  /** 敏感配置（secret/access_key/_password/_token）是否已配置值，值为空串时据此提示 */
+  has_value?: boolean
 }
 
 export interface CreateConfigItemParams {

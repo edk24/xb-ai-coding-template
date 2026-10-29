@@ -1,5 +1,4 @@
 import client from './client'
-import { hashPassword } from '../utils/password'
 
 export interface LoginParams {
   username: string
@@ -18,18 +17,22 @@ export interface UserProfile {
   roles: string[]
   permission_keys: string[]
   is_super: boolean
+  /** 初始密码/被重置密码后为 true，前端强制跳转修改密码页 */
+  must_change_password: boolean
 }
 
 export interface LoginResult {
+  /** @deprecated 会话改为 HttpOnly Cookie 后前端不再保存 token，字段仅保留以兼容后端响应 */
   token: string
   expire_in: number
   user: UserProfile
 }
 
+/** 密码由后端校验并加密存储，前端直接发送明文 */
 export function loginApi(params: LoginParams) {
   return client.post<{ code: number; message: string; data: LoginResult }>(
     '/auth/login',
-    { ...params, password: hashPassword(params.password) },
+    params,
   )
 }
 
@@ -63,11 +66,7 @@ export function updateProfileApi(params: UpdateProfileParams) {
 export function updatePasswordApi(params: UpdatePasswordParams) {
   return client.put<{ code: number; message: string }>(
     '/auth/password',
-    {
-      old_password: hashPassword(params.old_password),
-      new_password: hashPassword(params.new_password),
-      confirm_password: hashPassword(params.confirm_password),
-    },
+    params,
   )
 }
 

@@ -7,6 +7,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
 import { getPermissionsTreeApi, createPermissionApi, updatePermissionApi, deletePermissionApi } from '../../../api/permissions'
 import type { Permission, CreatePermissionParams } from '../../../api/permissions'
+import Can from '../../../components/Can'
 
 const TYPE_MAP: Record<string, { color: string; label: string }> = {
   catalog: { color: 'blue', label: '目录' },
@@ -154,12 +155,18 @@ export default function Permissions() {
       width: 220,
       render: (_: unknown, record: Permission) => (
         <Space size={4}>
-          <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => openCreate(record.id)} />
-          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+          <Can permission="permissions:create">
+            <Button type="link" size="small" icon={<PlusOutlined />} onClick={() => openCreate(record.id)} />
+          </Can>
+          <Can permission="permissions:update">
+            <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(record)} />
+          </Can>
           {record.id > 16 && (
-            <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" size="small" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
+            <Can permission="permissions:delete">
+              <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
+                <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+              </Popconfirm>
+            </Can>
           )}
         </Space>
       ),
@@ -169,7 +176,11 @@ export default function Permissions() {
   return (
     <Card
       title="菜单权限"
-      extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate(0)}>新增</Button>}
+      extra={
+        <Can permission="permissions:create">
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate(0)}>新增</Button>
+        </Can>
+      }
     >
       <Table
         columns={columns}

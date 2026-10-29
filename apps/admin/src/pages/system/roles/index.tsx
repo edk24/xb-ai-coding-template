@@ -9,6 +9,7 @@ import { getRolesApi, createRoleApi, updateRoleApi, deleteRoleApi } from '../../
 import type { Role, CreateRoleParams } from '../../../api/roles'
 import { getPermissionsTreeApi } from '../../../api/permissions'
 import type { Permission } from '../../../api/permissions'
+import Can from '../../../components/Can'
 
 export default function Roles() {
   const DATA_SCOPE_MAP: Record<number, string> = { 1: '仅本人数据', 2: '本部门数据', 3: '本部门及以下', 4: '全部数据' }
@@ -115,11 +116,15 @@ export default function Roles() {
       title: '操作', width: 160,
       render: (_: unknown, record: Role) => (
         <Space>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>编辑</Button>
+          <Can permission="roles:update">
+            <Button type="link" size="small" onClick={() => openEdit(record)}>编辑</Button>
+          </Can>
           {record.id !== 1 && (
-            <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
-              <Button type="link" size="small" danger>删除</Button>
-            </Popconfirm>
+            <Can permission="roles:delete">
+              <Popconfirm title="确定删除？" onConfirm={() => handleDelete(record.id)}>
+                <Button type="link" size="small" danger>删除</Button>
+              </Popconfirm>
+            </Can>
           )}
         </Space>
       ),
@@ -127,7 +132,14 @@ export default function Roles() {
   ]
 
   return (
-    <Card title="角色管理" extra={<Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增</Button>}>
+    <Card
+      title="角色管理"
+      extra={
+        <Can permission="roles:create">
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>新增</Button>
+        </Can>
+      }
+    >
       <Table
         rowKey="id"
         columns={columns}
@@ -164,15 +176,17 @@ export default function Roles() {
               <Radio value={4}>全部数据</Radio>
             </Radio.Group>
           </Form.Item>
-          <Form.Item label="菜单权限">
-            <Tree
-              checkable
-              defaultExpandAll
-              checkedKeys={checkedKeys}
-              onCheck={(keys) => setCheckedKeys(keys as number[])}
-              treeData={buildTreeData(permTree)}
-            />
-          </Form.Item>
+          <Can permission="roles:assign-permissions">
+            <Form.Item label="菜单权限">
+              <Tree
+                checkable
+                defaultExpandAll
+                checkedKeys={checkedKeys}
+                onCheck={(keys) => setCheckedKeys(keys as number[])}
+                treeData={buildTreeData(permTree)}
+              />
+            </Form.Item>
+          </Can>
         </Form>
       </Drawer>
     </Card>

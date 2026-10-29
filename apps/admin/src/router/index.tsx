@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AuthGuard from '../components/AuthGuard'
+import PermissionRoute from '../components/PermissionRoute'
 import AdminLayout from '../layouts/AdminLayout'
 import Login from '../pages/login'
 import Dashboard from '../pages/dashboard'
@@ -28,18 +29,18 @@ export default function AppRouter() {
         }
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="dashboard" element={<PermissionRoute><Dashboard /></PermissionRoute>} />
         <Route path="profile/basic" element={<Profile />} />
         <Route path="profile/password" element={<Password />} />
-        <Route path="system/admin-users" element={<AdminUsers />} />
-        <Route path="system/roles" element={<Roles />} />
-        <Route path="system/departments" element={<Departments />} />
-        <Route path="system/permissions" element={<Permissions />} />
-        <Route path="system/config" element={<Config />} />
-        <Route path="system/scheduled-jobs" element={<ScheduledJobs />} />
-        <Route path="logs/login" element={<LoginLogs />} />
-        <Route path="logs/operation" element={<OperationLogs />} />
-        <Route path="attachments" element={<Attachments />} />
+        <Route path="system/admin-users" element={<PermissionRoute><AdminUsers /></PermissionRoute>} />
+        <Route path="system/roles" element={<PermissionRoute><Roles /></PermissionRoute>} />
+        <Route path="system/departments" element={<PermissionRoute><Departments /></PermissionRoute>} />
+        <Route path="system/permissions" element={<PermissionRoute><Permissions /></PermissionRoute>} />
+        <Route path="system/config" element={<PermissionRoute><Config /></PermissionRoute>} />
+        <Route path="system/scheduled-jobs" element={<PermissionRoute><ScheduledJobs /></PermissionRoute>} />
+        <Route path="logs/login" element={<PermissionRoute><LoginLogs /></PermissionRoute>} />
+        <Route path="logs/operation" element={<PermissionRoute><OperationLogs /></PermissionRoute>} />
+        <Route path="attachments" element={<PermissionRoute><Attachments /></PermissionRoute>} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
