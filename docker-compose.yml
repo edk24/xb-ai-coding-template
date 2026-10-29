@@ -2,14 +2,17 @@ services:
   api:
     build:
       context: ./apps/api
+    image: admin-api:${API_IMAGE_TAG:-local}
+    restart: unless-stopped
     environment:
       SERVER_PORT: 8000
-      SPRING_PROFILES_ACTIVE: local
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/admin_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: admin123
-      JWT_SECRET: local-dev-admin-system-secret-change-me
-      JWT_EXPIRE_SECONDS: 7200
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-admin_system}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-admin}
+      # 敏感值不设默认，缺失时 compose 直接报错并提示（本地配置见根目录 .env.example）
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?请设置 SPRING_DATASOURCE_PASSWORD（与 MYSQL_PASSWORD 保持一致）}
+      JWT_SECRET: ${JWT_SECRET:?请设置 JWT_SECRET（≥32 字符随机串，可用 openssl rand -hex 32 生成）}
+      JWT_EXPIRE_SECONDS: ${JWT_EXPIRE_SECONDS:-7200}
       UPLOAD_ROOT: /app/storage/attachments
     volumes:
       - api_storage:/app/storage
@@ -18,21 +21,31 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    healthcheck:
+      # 运行时镜像不含 curl，用 bash 的 /dev/tcp 探测 8000 端口
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8000'"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0.43
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: admin_system
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请设置 MYSQL_ROOT_PASSWORD（MySQL root 密码）}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-admin_system}
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?请设置 MYSQL_PASSWORD（MySQL 应用账号密码）}
+      # 供 healthcheck 中的 mysqladmin 读取密码，避免在命令行里出现明文
+      MYSQL_PWD: ${MYSQL_PASSWORD:?请设置 MYSQL_PASSWORD（MySQL 应用账号密码）}
     ports:
-      - "3309:3306"
+      # 只绑定回环地址，不对外暴露数据库
+      - "127.0.0.1:${MYSQL_PORT:-3309}:3306"
     volumes:
       - mysql80_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin", "-padmin123"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u\"$$MYSQL_USER\""]
       interval: 5s
       timeout: 3s
       retries: 20

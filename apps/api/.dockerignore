@@ -1,0 +1,13 @@
+# 构建上下文只需要 pom.xml 与 src/，其余一律排除以减小上下文体积（target/ 约 41MB）
+target/
+storage/
+.env
+.env.*
+.git/
+.gitignore
+.dockerignore
+*.md
+*.log
+logs/
+.DS_Store
+**/.DS_Store

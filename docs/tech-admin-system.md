@@ -91,6 +91,8 @@
 - JWT 过滤器验证 token → 查询用户 → 注入 `SecurityContext` / 当前用户上下文
 - CRUD 控制器或业务服务在数据变更后调用 `LogService.recordOperationLog()` 记录操作日志
 
+> **安全加固后现状**：会话已改为 HttpOnly Cookie `ADMIN_TOKEN`（前端不再使用 `Authorization` 头，服务端仅保留 Bearer 过渡兼容），接口增加 `@RequirePermission` 方法级鉴权，密码改为 PBKDF2 存储，本地附件 `/storage/**` 静态访问已移除。本文档中涉及 Bearer Token、旧密码哈希、静态附件路径的描述以 [security-hardening.md](./security-hardening.md) 为准。
+
 ---
 
 ## 3. 环境要求与快速启动
@@ -1022,6 +1024,8 @@ Authorization: Bearer <token>
 ## 7. 认证与权限模型
 
 ### 7.1 JWT 认证流程
+
+> 现状说明：登录态已改为 HttpOnly Cookie（`ADMIN_TOKEN`），并引入 `token_version` 使登出/改密后旧 token 立即失效；接口权限由 `@RequirePermission` 校验。本文以下流程图为加固前的实现，安全相关的完整行为与老库升级步骤见 [security-hardening.md](./security-hardening.md)。
 
 ```
 登录请求 → AuthService.login() → 校验账号/密码/状态

@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web:
+    name: Web build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 真实构建路径：tsc -b + vite build，能同时覆盖类型检查
+      - name: Build admin
+        run: pnpm --filter admin build
+
+      - name: Test admin
+        working-directory: apps/admin
+        run: node --test test/*.test.ts
+
+  api:
+    name: API test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          cache-dependency-path: apps/api/pom.xml
+
+      # ./mvnw 会优先使用本机 mvn（setup-java 已提供），无需额外下载
+      - name: Run tests
+        run: ./mvnw -B test
+
+  migration:
+    name: Flyway migration on MySQL 8
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0.43
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: admin_system
+          MYSQL_USER: admin
+          MYSQL_PASSWORD: admin123
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      # Flyway 10.7 起官方镜像不再内置 MySQL 驱动（MariaDB 驱动不再接受 jdbc:mysql://），需手动挂载 Connector/J
+      - name: Download MySQL JDBC driver
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/mysql-connector-j-8.4.0.jar" \
+            https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/8.4.0/mysql-connector-j-8.4.0.jar
+
+      # 用官方 Flyway 镜像对真实 MySQL 跑一遍全部迁移，提前发现 SQL 在 MySQL 上不可执行的问题
+      - name: Run Flyway migrate
+        run: |
+          docker run --rm --network host \
+            -v "$PWD/apps/api/src/main/resources/db/migration:/flyway/sql" \
+            -v "$RUNNER_TEMP/mysql-connector-j-8.4.0.jar:/flyway/drivers/mysql-connector-j-8.4.0.jar" \
+            flyway/flyway:10 \
+            -url="jdbc:mysql://127.0.0.1:3306/admin_system?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai" \
+            -user=admin \
+            -password=admin123 \
+            -locations=filesystem:/flyway/sql \
+            -connectRetries=60 \
+            migrate
