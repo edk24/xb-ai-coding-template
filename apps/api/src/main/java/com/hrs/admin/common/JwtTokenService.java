@@ -15,7 +15,7 @@ public class JwtTokenService {
         this.expireSeconds = expireSeconds;
     }
 
-    public String createToken(Long userId, String username, boolean superAdmin) {
+    public String createToken(Long userId, String username, boolean superAdmin, int tokenVersion) {
         Instant now = Instant.now();
         return JWT.create()
             .withIssuer("admin-system")
@@ -23,6 +23,8 @@ public class JwtTokenService {
             .withClaim("uid", userId)
             .withClaim("username", username)
             .withClaim("is_super", superAdmin ? 1 : 0)
+            // ver 与 admin_users.token_version 对齐，退出/改密/重置密码后旧 token 立即失效
+            .withClaim("ver", tokenVersion)
             .withIssuedAt(Date.from(now))
             .withExpiresAt(Date.from(now.plusSeconds(expireSeconds)))
             .sign(algorithm);
@@ -37,7 +39,8 @@ public class JwtTokenService {
             Long userId = decoded.getClaim("uid").asLong();
             String username = decoded.getClaim("username").asString();
             boolean superAdmin = decoded.getClaim("is_super").asInt() == 1;
-            return new CurrentAdminUser(userId, username, superAdmin);
+            int tokenVersion = decoded.getClaim("ver").asInt();
+            return new CurrentAdminUser(userId, username, superAdmin, tokenVersion);
         } catch (JWTVerificationException | NullPointerException e) {
             throw new IllegalArgumentException("Token 无效或已过期", e);
         }

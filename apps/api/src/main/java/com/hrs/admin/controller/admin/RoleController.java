@@ -3,6 +3,7 @@ package com.hrs.admin.controller.admin;
 import com.hrs.admin.common.ApiResponse;
 import com.hrs.admin.dto.RoleRequest;
 import com.hrs.admin.security.AdminContext;
+import com.hrs.admin.security.RequirePermission;
 import com.hrs.admin.service.RoleService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -24,16 +25,19 @@ public class RoleController {
     }
 
     @PostMapping
+    @RequirePermission("roles:create")
     public ApiResponse<?> create(@Valid @RequestBody RoleRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.ok(roleService.create(request, AdminContext.get().getId(), httpRequest), "角色已创建");
     }
 
     @PutMapping("/{id}")
+    @RequirePermission("roles:update")
     public ApiResponse<?> update(@PathVariable Long id, @Valid @RequestBody RoleRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.ok(roleService.update(id, request, AdminContext.get().getId(), httpRequest), "角色已更新");
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission("roles:delete")
     public ApiResponse<Void> delete(@PathVariable Long id, HttpServletRequest httpRequest) {
         roleService.delete(id, AdminContext.get().getId(), httpRequest);
         return ApiResponse.ok(null, "角色已删除");

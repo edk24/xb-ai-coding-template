@@ -8,6 +8,7 @@ public class ConfigItemRow {
     private String name = "";
     private String key = "";
     private String value = "";
+    private Boolean hasValue = false;
     private String type = "";
     private String options = "";
     private Integer sort = 0;
@@ -26,6 +27,9 @@ public class ConfigItemRow {
     public void setKey(String key) { this.key = key; }
     public String getValue() { return value; }
     public void setValue(String value) { this.value = value; }
+    @JsonProperty("has_value")
+    public Boolean getHasValue() { return hasValue; }
+    public void setHasValue(Boolean hasValue) { this.hasValue = hasValue; }
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
     public String getOptions() { return options; }

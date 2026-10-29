@@ -27,13 +27,17 @@ public class AdminUserService {
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             throw new BusinessException("请输入登录密码");
         }
+        if (!request.getPassword().matches(PasswordUtils.POLICY_REGEX)) {
+            throw new BusinessException(PasswordUtils.POLICY_MESSAGE);
+        }
         assertDepartmentExists(request.getDepartmentId());
         assertUniqueUsername(request.getUsername(), null);
-        String salt = PasswordUtils.randomSalt();
-        String hash = PasswordUtils.adminPasswordHash(request.getPassword(), salt);
+        String salt = PasswordUtils.newSalt();
+        String hash = PasswordUtils.hash(request.getPassword(), salt);
         jdbc.update("""
-            INSERT INTO admin_users (department_id, username, nickname, avatar, phone, email, password_hash, salt, status, is_super, remark, created_by, updated_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+            INSERT INTO admin_users (department_id, username, nickname, avatar, phone, email, password_hash, salt,
+              status, is_super, must_change_password, remark, created_by, updated_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?)
             """, request.getDepartmentId(), request.getUsername(), request.getNickname(), nz(request.getAvatar()),
             nz(request.getPhone()), nz(request.getEmail()), hash, salt, request.getStatus(), nz(request.getRemark()), operatorId, operatorId);
         Long id = jdbc.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
@@ -69,15 +73,22 @@ public class AdminUserService {
     }
 
     @Transactional
-    public Map<String, String> resetPassword(Long id, String clientMd5Password, Long operatorId, HttpServletRequest httpRequest) {
+    public void resetPassword(Long id, String plainPassword, Long operatorId, HttpServletRequest httpRequest) {
         Map<String, Object> user = requireUser(id);
         AdminUserServiceRules.ensureCanResetPassword(Rows.integer(user, "is_super") == 1);
-        String password = (clientMd5Password == null || clientMd5Password.isBlank()) ? PasswordUtils.md5Hex("123456") : clientMd5Password;
-        String salt = PasswordUtils.randomSalt();
-        jdbc.update("UPDATE admin_users SET password_hash = ?, salt = ?, updated_at = NOW(), updated_by = ? WHERE id = ?",
-            PasswordUtils.adminPasswordHash(password, salt), salt, operatorId, id);
+        if (plainPassword == null || plainPassword.isBlank()) {
+            throw new BusinessException("请输入新密码");
+        }
+        if (!plainPassword.matches(PasswordUtils.POLICY_REGEX)) {
+            throw new BusinessException(PasswordUtils.POLICY_MESSAGE);
+        }
+        String salt = PasswordUtils.newSalt();
+        jdbc.update("""
+            UPDATE admin_users SET password_hash = ?, salt = ?, must_change_password = 1,
+              token_version = token_version + 1, updated_at = NOW(), updated_by = ?
+            WHERE id = ?
+            """, PasswordUtils.hash(plainPassword, salt), salt, operatorId, id);
         logService.operation(operatorId, "管理员管理", "重置密码", httpRequest, Map.of("id", id), Map.of("success", true));
-        return Map.of("new_password", clientMd5Password == null || clientMd5Password.isBlank() ? "123456" : clientMd5Password);
     }
 
     private AdminUserRow find(Long id) {

@@ -6,8 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class AdminApiProperties {
     private String jwtSecret = "change-me-admin-system-secret";
     private long jwtExpireSeconds = 7200;
+    private String corsAllowedOrigins = "http://localhost:5173";
     private String uploadRoot = "storage/attachments";
-    private String uploadUrlPrefix = "/storage/attachments";
     private long attachmentMaxSize = 52428800;
     private String attachmentAllowedExtensions = "jpg,jpeg,png,gif,bmp,webp,doc,docx,xls,xlsx,pdf,txt,zip,rar,mp4,avi,mp3,m4a,aac,wav";
 
@@ -27,20 +27,20 @@ public class AdminApiProperties {
         this.jwtExpireSeconds = jwtExpireSeconds;
     }
 
+    public String getCorsAllowedOrigins() {
+        return corsAllowedOrigins;
+    }
+
+    public void setCorsAllowedOrigins(String corsAllowedOrigins) {
+        this.corsAllowedOrigins = corsAllowedOrigins;
+    }
+
     public String getUploadRoot() {
         return uploadRoot;
     }
 
     public void setUploadRoot(String uploadRoot) {
         this.uploadRoot = uploadRoot;
-    }
-
-    public String getUploadUrlPrefix() {
-        return uploadUrlPrefix;
-    }
-
-    public void setUploadUrlPrefix(String uploadUrlPrefix) {
-        this.uploadUrlPrefix = uploadUrlPrefix;
     }
 
     public long getAttachmentMaxSize() {

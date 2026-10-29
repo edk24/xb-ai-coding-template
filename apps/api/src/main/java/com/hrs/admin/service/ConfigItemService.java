@@ -47,11 +47,16 @@ public class ConfigItemService {
     public ConfigItemRow update(Long id, ConfigItemRequest request, Long operatorId, HttpServletRequest httpRequest) {
         requireItem(id);
         assertUniqueKey(request.getKey(), id);
+        Object value = request.getValue();
+        if (queryService.isSensitiveConfigKey(request.getKey()) && stringify(value).isBlank()) {
+            // 敏感配置留空表示"不修改"：沿用数据库旧值，避免前端掩码回写把密钥清空。
+            value = jdbc.queryForObject("SELECT `value` FROM config_items WHERE id = ?", String.class, id);
+        }
         jdbc.update("""
             UPDATE config_items SET name = ?, group_name = ?, `key` = ?, `value` = ?, type = ?, options = ?, sort = ?,
               status = ?, remark = ?, updated_by = ?, updated_at = NOW()
             WHERE id = ?
-            """, request.getName(), nz(request.getGroupName()), request.getKey(), stringify(request.getValue()),
+            """, request.getName(), nz(request.getGroupName()), request.getKey(), stringify(value),
             request.getType(), nz(request.getOptions()), request.getSort(), request.getStatus(), nz(request.getRemark()), operatorId, id);
         logService.operation(operatorId, "系统配置", "编辑配置项", httpRequest, Map.of("id", id), Map.of("success", true));
         return find(id);
@@ -62,6 +67,10 @@ public class ConfigItemService {
         for (Map<String, Object> item : items) {
             Object idValue = item.get("id");
             if (!(idValue instanceof Number number)) {
+                continue;
+            }
+            if (queryService.isSensitiveConfigKey(configKey(number.longValue())) && stringify(item.get("value")).isBlank()) {
+                // 敏感配置未改动时不提交空值，避免把已有密钥覆盖为空。
                 continue;
             }
             jdbc.update("UPDATE config_items SET `value` = ?, updated_by = ?, updated_at = NOW() WHERE id = ?",
@@ -96,6 +105,11 @@ public class ConfigItemService {
         if (jdbc.queryForObject("SELECT COUNT(*) FROM config_items WHERE id = ?", Long.class, id) == 0) {
             throw new BusinessException("配置项不存在", 404);
         }
+    }
+
+    private String configKey(Long id) {
+        List<String> keys = jdbc.queryForList("SELECT `key` FROM config_items WHERE id = ?", String.class, id);
+        return keys.isEmpty() ? "" : keys.getFirst();
     }
 
     private void assertUniqueKey(String key, Long ignoreId) {

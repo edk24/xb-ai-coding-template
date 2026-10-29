@@ -2,6 +2,7 @@ package com.hrs.admin.service;
 
 import com.hrs.admin.config.AdminApiProperties;
 import com.hrs.admin.exception.BusinessException;
+import com.hrs.admin.vo.AdminUserProfile;
 import com.hrs.admin.vo.AttachmentRow;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
@@ -17,9 +18,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class AttachmentService {
+    private static final Logger log = LoggerFactory.getLogger(AttachmentService.class);
     private static final DateTimeFormatter DATE_DIR = DateTimeFormatter.ofPattern("yyyy/MM/dd");
     private final JdbcTemplate jdbc;
     private final ConfigItemService configItemService;
@@ -80,11 +85,13 @@ public class AttachmentService {
             Files.createDirectories(target.getParent());
             file.transferTo(target);
         } catch (IOException e) {
+            log.error("附件写入本地磁盘失败: {}", target, e);
             throw new BusinessException("上传失败", 500);
         }
         String path = relative.toString().replace('\\', '/');
-        String url = properties.getUploadUrlPrefix() + "/" + path;
-        Long id = insert(userId, originalName, file.getSize(), file.getContentType(), "local", path, url);
+        // 本地附件不再对外公开静态目录，url 留空，由 file_url 指向受鉴权的下载接口。
+        // mime_type 由服务端按扩展名映射，不信任客户端 multipart 里声明的 Content-Type。
+        Long id = insert(userId, originalName, file.getSize(), safeMimeType(ext), "local", path, "");
         logService.operation(userId, "附件中心", "上传附件", request, Map.of("name", originalName, "size", file.getSize()), Map.of("id", id));
         return find(id);
     }
@@ -102,18 +109,20 @@ public class AttachmentService {
             + "/" + DATE_DIR.format(LocalDate.now()) + "/" + System.currentTimeMillis() + "_"
             + UUID.randomUUID().toString().substring(0, 8) + (ext.isBlank() ? "" : "." + ext);
         COSClient cosClient = createCosClient(secretId, secretKey, region);
+        String mimeType = safeMimeType(ext);
         try (var input = file.getInputStream()) {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentLength(file.getSize());
-            metadata.setContentType(file.getContentType() == null ? "application/octet-stream" : file.getContentType());
+            metadata.setContentType(mimeType);
             cosClient.putObject(bucket, objectKey, input, metadata);
         } catch (Exception e) {
+            log.error("上传文件到 COS 失败: {}", objectKey, e);
             throw new BusinessException("上传文件到 COS 失败", 502);
         } finally {
             cosClient.shutdown();
         }
         String url = cosUrl(bucket, region, objectKey);
-        Long id = insert(userId, originalName, file.getSize(), file.getContentType(), "cos", objectKey, url);
+        Long id = insert(userId, originalName, file.getSize(), mimeType, "cos", objectKey, url);
         logService.operation(userId, "附件中心", "上传附件", request,
             Map.of("name", originalName, "size", file.getSize(), "storage_type", "cos"), Map.of("id", id));
         return find(id);
@@ -144,15 +153,91 @@ public class AttachmentService {
         if (name.isBlank() || path.isBlank()) {
             throw new BusinessException("附件名称和路径不能为空", 422);
         }
-        long size = payload.get("size") instanceof Number number ? number.longValue() : 0L;
+        if (name.length() > 255 || path.length() > 500) {
+            throw new BusinessException("附件名称或路径过长", 422);
+        }
+        String mimeType = str(payload.get("mime_type"));
+        if (mimeType.length() > 127) {
+            throw new BusinessException("附件类型过长", 422);
+        }
+        // COS/OSS 附件下载是 302 到对象存储、Content-Type 由存储侧决定，
+        // 所以记录层只接受安全白名单，其余收敛为 application/octet-stream，堵住 text/html 等同源 XSS。
+        mimeType = recordMimeType(mimeType);
+        Object sizeValue = payload.get("size");
+        if (!(sizeValue instanceof Number number)) {
+            throw new BusinessException("附件大小不合法", 422);
+        }
+        long size = number.longValue();
+        if (size < 0 || size > properties.getAttachmentMaxSize()) {
+            throw new BusinessException("附件大小不合法", 422);
+        }
         String url = str(payload.get("url"));
         if (url.isBlank()) {
             String cdnUrl = str(payload.get("cdn_url")).replaceAll("/+$", "");
             url = cdnUrl.isBlank() ? "" : cdnUrl + "/" + path.replaceAll("^/+", "");
         }
-        Long id = insert(userId, name, size, str(payload.get("mime_type")), storageType, path, url);
+        // 客户端只能记录对象存储的地址；地址必须为空或 http(s)，避免 javascript: 等伪协议进入列表形成 XSS。
+        if (!url.isEmpty() && !allowedAttachmentUrl(url)) {
+            throw new BusinessException("附件地址不合法", 422);
+        }
+        Long id = insert(userId, name, size, mimeType, storageType, path, url);
         logService.operation(userId, "附件中心", "上传附件", request, Map.of("name", name, "storage_type", storageType), Map.of("id", id));
         return find(id);
+    }
+
+    /** 附件下载描述：本地文件输出文件流，COS/OSS 附件 302 跳转到对象存储地址。 */
+    public record Download(String name, String mimeType, Path file, String redirectUrl) {
+    }
+
+    public Download download(Long id, AdminUserProfile currentUser) {
+        Map<String, Object> row = raw(id);
+        authorizeDownload(row, currentUser);
+        if ("local".equals(Rows.str(row, "storage_type"))) {
+            Path file = resolveLocalFile(Rows.str(row, "path"));
+            if (!Files.isRegularFile(file)) {
+                throw new BusinessException("附件不存在", 404);
+            }
+            String mimeType = Rows.str(row, "mime_type");
+            if (mimeType.isBlank()) {
+                try {
+                    mimeType = Files.probeContentType(file);
+                } catch (IOException e) {
+                    log.warn("探测附件类型失败: {}", file, e);
+                }
+            }
+            if (mimeType == null || mimeType.isBlank()) {
+                mimeType = "application/octet-stream";
+            }
+            return new Download(Rows.str(row, "name"), mimeType, file, null);
+        }
+        String url = Rows.str(row, "url");
+        // 只允许跳转到 http/https，且禁止换行等控制字符（防响应头注入），否则按不存在处理。
+        boolean httpUrl = url.startsWith("http://") || url.startsWith("https://");
+        if (!httpUrl || url.indexOf('\r') >= 0 || url.indexOf('\n') >= 0) {
+            throw new BusinessException("附件不存在", 404);
+        }
+        return new Download(Rows.str(row, "name"), "", null, url);
+    }
+
+    /**
+     * 下载鉴权：超管或拥有附件查看权限的账号可下载全部附件；
+     * 其他账号只能下载本人上传的文件（如个人头像），避免按顺序 id 枚举他人附件。
+     */
+    private void authorizeDownload(Map<String, Object> row, AdminUserProfile currentUser) {
+        if (currentUser == null) {
+            throw new BusinessException("未登录或登录态失效", 401);
+        }
+        if (Boolean.TRUE.equals(currentUser.getSuperAdmin())) {
+            return;
+        }
+        List<String> keys = currentUser.getPermissionKeys();
+        if (keys != null && keys.contains("attachments:view")) {
+            return;
+        }
+        if (currentUser.getId() != null && currentUser.getId().equals(Rows.lng(row, "admin_user_id"))) {
+            return;
+        }
+        throw new BusinessException("没有该操作权限", 403);
     }
 
     public Map<String, Object> credentials(String type) {
@@ -207,6 +292,7 @@ public class AttachmentService {
         try {
             return CosStsClient.getCredential(config);
         } catch (Exception e) {
+            log.error("获取 COS 临时凭证失败", e);
             throw new BusinessException("获取 COS 临时凭证失败", 502);
         }
     }
@@ -229,12 +315,13 @@ public class AttachmentService {
 
     @Transactional
     public void delete(Long id, Long userId, HttpServletRequest request) {
-        AttachmentRow row = find(id);
-        if ("local".equals(row.getStorageType())) {
+        Map<String, Object> row = raw(id);
+        if ("local".equals(Rows.str(row, "storage_type"))) {
             try {
-                Files.deleteIfExists(Path.of(properties.getUploadRoot()).resolve(row.getPath()).normalize());
-            } catch (IOException ignored) {
+                Files.deleteIfExists(resolveLocalFile(Rows.str(row, "path")));
+            } catch (IOException e) {
                 // 数据记录删除优先，文件删除失败不阻塞管理操作。
+                log.warn("删除本地附件文件失败: {}", Rows.str(row, "path"), e);
             }
         }
         jdbc.update("DELETE FROM attachments WHERE id = ?", id);
@@ -250,8 +337,11 @@ public class AttachmentService {
     }
 
     private AttachmentRow find(Long id) {
+        return attachmentRow(raw(id));
+    }
+
+    private Map<String, Object> raw(Long id) {
         return jdbc.queryForList("SELECT * FROM attachments WHERE id = ?", id).stream()
-            .map(this::attachmentRow)
             .findFirst()
             .orElseThrow(() -> new BusinessException("附件不存在", 404));
     }
@@ -263,11 +353,31 @@ public class AttachmentService {
         item.setName(Rows.str(row, "name"));
         item.setSize(Rows.lng(row, "size"));
         item.setMimeType(Rows.str(row, "mime_type"));
-        item.setStorageType(Rows.str(row, "storage_type"));
-        item.setPath(Rows.str(row, "path"));
-        item.setUrl(Rows.str(row, "url"));
+        String storageType = Rows.str(row, "storage_type");
+        item.setStorageType(storageType);
+        // 本地附件只暴露受鉴权的下载接口地址，服务端 path 不对外返回。
+        item.setFileUrl("local".equals(storageType)
+            ? "/admin-api/attachments/" + item.getId() + "/file"
+            : Rows.str(row, "url"));
         item.setCreatedAt(Rows.date(row, "created_at"));
         return item;
+    }
+
+    /** 把记录里的相对路径解析到上传根目录下，并确保没有越出根目录（防路径穿越）。 */
+    private Path resolveLocalFile(String path) {
+        Path root = Path.of(properties.getUploadRoot()).toAbsolutePath().normalize();
+        if (path.isBlank()) {
+            throw new BusinessException("附件不存在", 404);
+        }
+        Path file = root.resolve(path).normalize();
+        if (!file.startsWith(root)) {
+            throw new BusinessException("附件不存在", 404);
+        }
+        return file;
+    }
+
+    private boolean allowedAttachmentUrl(String url) {
+        return url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/admin-api/attachments/");
     }
 
     private String extension(String name) {
@@ -277,9 +387,42 @@ public class AttachmentService {
 
     private boolean allowed(String ext) {
         if (ext.isBlank()) {
-            return true;
+            return false;
         }
         return ("," + properties.getAttachmentAllowedExtensions().toLowerCase() + ",").contains("," + ext + ",");
+    }
+
+    /**
+     * 按扩展名给出落库/输出用的 MIME 类型，避免直接信任客户端声明的 Content-Type
+     * （例如把 .txt 声明成 text/html 造成同源 XSS）。
+     */
+    private String safeMimeType(String ext) {
+        return switch (ext) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "bmp" -> "image/bmp";
+            case "webp" -> "image/webp";
+            case "pdf" -> "application/pdf";
+            case "txt" -> "text/plain";
+            case "mp4" -> "video/mp4";
+            case "mp3" -> "audio/mpeg";
+            case "m4a" -> "audio/mp4";
+            case "aac" -> "audio/aac";
+            case "wav" -> "audio/wav";
+            default -> "application/octet-stream";
+        };
+    }
+
+    /** record 接口落库前的 MIME 白名单（大小写不敏感）：非白名单一律按二进制处理。 */
+    private String recordMimeType(String mimeType) {
+        String normalized = mimeType == null ? "" : mimeType.trim().toLowerCase();
+        return switch (normalized) {
+            case "image/jpeg", "image/png", "image/gif", "image/bmp", "image/webp",
+                 "application/pdf", "text/plain",
+                 "video/mp4", "audio/mpeg", "audio/mp4", "audio/aac", "audio/wav" -> normalized;
+            default -> "application/octet-stream";
+        };
     }
 
     private String str(Object value) {

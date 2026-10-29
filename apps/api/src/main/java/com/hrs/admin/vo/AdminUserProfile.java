@@ -15,6 +15,8 @@ public class AdminUserProfile {
     private String remark = "";
     private Integer status = 1;
     private Boolean superAdmin = false;
+    private Integer tokenVersion = 0;
+    private Boolean mustChangePassword = false;
     private String departmentName = "";
     private List<String> roles = new ArrayList<>();
     private List<String> permissionKeys = new ArrayList<>();
@@ -99,6 +101,24 @@ public class AdminUserProfile {
 
     public void setSuperAdmin(Boolean superAdmin) {
         this.superAdmin = superAdmin;
+    }
+
+    @JsonProperty("token_version")
+    public Integer getTokenVersion() {
+        return tokenVersion;
+    }
+
+    public void setTokenVersion(Integer tokenVersion) {
+        this.tokenVersion = tokenVersion;
+    }
+
+    @JsonProperty("must_change_password")
+    public Boolean getMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(Boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 
     @JsonProperty("department_name")

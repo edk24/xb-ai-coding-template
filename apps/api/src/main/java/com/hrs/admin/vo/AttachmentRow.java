@@ -9,8 +9,7 @@ public class AttachmentRow {
     private Long size = 0L;
     private String mimeType = "";
     private String storageType = "";
-    private String path = "";
-    private String url = "";
+    private String fileUrl = "";
     private String createdAt = "";
 
     public Long getId() { return id; }
@@ -28,10 +27,9 @@ public class AttachmentRow {
     @JsonProperty("storage_type")
     public String getStorageType() { return storageType; }
     public void setStorageType(String storageType) { this.storageType = storageType; }
-    public String getPath() { return path; }
-    public void setPath(String path) { this.path = path; }
-    public String getUrl() { return url; }
-    public void setUrl(String url) { this.url = url; }
+    @JsonProperty("file_url")
+    public String getFileUrl() { return fileUrl; }
+    public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
     @JsonProperty("created_at")
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }

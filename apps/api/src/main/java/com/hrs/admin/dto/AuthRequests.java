@@ -1,7 +1,9 @@
 package com.hrs.admin.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.hrs.admin.common.PasswordUtils;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 public final class AuthRequests {
     private AuthRequests() {
@@ -43,6 +45,7 @@ public final class AuthRequests {
         private String oldPassword;
         @JsonProperty("new_password")
         @NotBlank(message = "请输入新密码")
+        @Pattern(regexp = PasswordUtils.POLICY_REGEX, message = PasswordUtils.POLICY_MESSAGE)
         private String newPassword;
         @JsonProperty("confirm_password")
         @NotBlank(message = "请确认新密码")

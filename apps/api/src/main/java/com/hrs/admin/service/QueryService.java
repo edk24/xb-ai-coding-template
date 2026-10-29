@@ -145,13 +145,23 @@ public class QueryService {
         return node;
     }
 
+    /** 配置 key 是否涉及密钥：命中则对外脱敏，只回传 has_value，不把密钥原文送到前端。 */
+    public boolean isSensitiveConfigKey(String key) {
+        String lower = key == null ? "" : key.toLowerCase();
+        return lower.contains("secret") || lower.contains("access_key")
+            || lower.endsWith("_password") || lower.endsWith("_token");
+    }
+
     private ConfigItemRow configItemRow(Map<String, Object> row) {
         ConfigItemRow item = new ConfigItemRow();
         item.setId(Rows.lng(row, "id"));
         item.setGroupName(Rows.str(row, "group_name"));
         item.setName(Rows.str(row, "name"));
-        item.setKey(Rows.str(row, "key"));
-        item.setValue(Rows.str(row, "value"));
+        String key = Rows.str(row, "key");
+        String value = Rows.str(row, "value");
+        item.setKey(key);
+        item.setValue(isSensitiveConfigKey(key) ? "" : value);
+        item.setHasValue(!value.isBlank());
         item.setType(Rows.str(row, "type"));
         item.setOptions(Rows.str(row, "options"));
         item.setSort(Rows.integer(row, "sort"));
@@ -168,9 +178,12 @@ public class QueryService {
         item.setName(Rows.str(row, "name"));
         item.setSize(Rows.lng(row, "size"));
         item.setMimeType(Rows.str(row, "mime_type"));
-        item.setStorageType(Rows.str(row, "storage_type"));
-        item.setPath(Rows.str(row, "path"));
-        item.setUrl(Rows.str(row, "url"));
+        String storageType = Rows.str(row, "storage_type");
+        item.setStorageType(storageType);
+        // 本地附件只暴露受鉴权的下载接口地址，服务端 path 不对外返回。
+        item.setFileUrl("local".equals(storageType)
+            ? "/admin-api/attachments/" + item.getId() + "/file"
+            : Rows.str(row, "url"));
         item.setCreatedAt(Rows.date(row, "created_at"));
         return item;
     }

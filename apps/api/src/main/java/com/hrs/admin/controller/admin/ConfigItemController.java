@@ -3,6 +3,7 @@ package com.hrs.admin.controller.admin;
 import com.hrs.admin.common.ApiResponse;
 import com.hrs.admin.dto.ConfigItemRequest;
 import com.hrs.admin.security.AdminContext;
+import com.hrs.admin.security.RequirePermission;
 import com.hrs.admin.service.ConfigItemService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -26,16 +27,19 @@ public class ConfigItemController {
     }
 
     @PostMapping
+    @RequirePermission("config:create")
     public ApiResponse<?> create(@Valid @RequestBody ConfigItemRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.ok(configItemService.create(request, AdminContext.get().getId(), httpRequest), "配置项已创建");
     }
 
     @PutMapping("/{id}")
+    @RequirePermission("config:update")
     public ApiResponse<?> update(@PathVariable Long id, @Valid @RequestBody ConfigItemRequest request, HttpServletRequest httpRequest) {
         return ApiResponse.ok(configItemService.update(id, request, AdminContext.get().getId(), httpRequest), "配置项已更新");
     }
 
     @PutMapping("/batch-save")
+    @RequirePermission("config:update")
     @SuppressWarnings("unchecked")
     public ApiResponse<Void> batchSave(@RequestBody Map<String, Object> request, HttpServletRequest httpRequest) {
         Object items = request.get("items");
@@ -47,6 +51,7 @@ public class ConfigItemController {
     }
 
     @DeleteMapping("/{id}")
+    @RequirePermission("config:delete")
     public ApiResponse<Void> delete(@PathVariable Long id, HttpServletRequest httpRequest) {
         configItemService.delete(id, AdminContext.get().getId(), httpRequest);
         return ApiResponse.ok(null, "配置项已删除");

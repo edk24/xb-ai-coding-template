@@ -5,6 +5,7 @@ import com.hrs.admin.dto.AuthRequests;
 import com.hrs.admin.security.AdminContext;
 import com.hrs.admin.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,12 +25,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<Map<String, Object>> login(@Valid @RequestBody AuthRequests.Login request, HttpServletRequest httpRequest) {
-        return ApiResponse.ok(authService.login(request, httpRequest), "登录成功");
+    public ApiResponse<Map<String, Object>> login(@Valid @RequestBody AuthRequests.Login request, HttpServletRequest httpRequest,
+                                                  HttpServletResponse httpResponse) {
+        return ApiResponse.ok(authService.login(request, httpRequest, httpResponse), "登录成功");
     }
 
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
+    public ApiResponse<Void> logout(HttpServletRequest httpRequest, HttpServletResponse httpResponse) {
+        authService.logout(AdminContext.get().getId(), httpRequest, httpResponse);
         return ApiResponse.ok(null, "退出成功");
     }
 
@@ -44,8 +47,9 @@ public class AuthController {
     }
 
     @PutMapping("/password")
-    public ApiResponse<Void> updatePassword(@Valid @RequestBody AuthRequests.Password request, HttpServletRequest httpRequest) {
-        authService.updatePassword(AdminContext.get().getId(), request, httpRequest);
+    public ApiResponse<Void> updatePassword(@Valid @RequestBody AuthRequests.Password request, HttpServletRequest httpRequest,
+                                            HttpServletResponse httpResponse) {
+        authService.updatePassword(AdminContext.get().getId(), request, httpRequest, httpResponse);
         return ApiResponse.ok(null, "密码修改成功，请重新登录");
     }
 }

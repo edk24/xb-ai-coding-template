@@ -1,8 +1,10 @@
 package com.hrs.admin.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.hrs.admin.common.PasswordUtils;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,4 +46,17 @@ public class AdminUserRequest {
     public void setRemark(String remark) { this.remark = remark; }
     public List<Long> getRoleIds() { return roleIds; }
     public void setRoleIds(List<Long> roleIds) { this.roleIds = roleIds; }
+
+    /**
+     * 重置密码请求体：只接收新明文密码，不再回显。
+     */
+    public static class ResetPassword {
+        @JsonProperty("new_password")
+        @NotBlank(message = "请输入新密码")
+        @Pattern(regexp = PasswordUtils.POLICY_REGEX, message = PasswordUtils.POLICY_MESSAGE)
+        private String newPassword;
+
+        public String getNewPassword() { return newPassword; }
+        public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
+    }
 }

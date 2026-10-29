@@ -7,7 +7,8 @@ spring:
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3309/admin_system?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
     username: ${SPRING_DATASOURCE_USERNAME:admin}
-    password: ${SPRING_DATASOURCE_PASSWORD:admin123}
+    # 不提供默认口令：未配置环境变量时启动会因认证失败而暴露配置缺失，避免弱默认口令被带上生产
+    password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   sql:
     init:
@@ -17,9 +18,8 @@ spring:
     enabled: true
     locations: classpath:db/migration
     validate-on-migrate: true
-    # 老库（此前由 schema.sql/data.sql 初始化）先打基线，再执行幂等的 V1/V2
-    baseline-on-migrate: true
-    baseline-version: 0
+    # 存量库不再静默 baseline，避免掩盖结构漂移；老库升级步骤见 docs/security-hardening.md
+    baseline-on-migrate: false
   servlet:
     multipart:
       max-file-size: 50MB
@@ -29,9 +29,11 @@ mybatis:
   mapper-locations: classpath:mapper/*.xml
 
 admin-api:
-  jwt-secret: ${JWT_SECRET:local-dev-admin-system-secret-change-me}
+  # 必须由环境变量注入（>=32 字符且不能使用仓库示例值），否则启动即失败
+  jwt-secret: ${JWT_SECRET:}
   jwt-expire-seconds: ${JWT_EXPIRE_SECONDS:7200}
+  # 允许跨域携带 Cookie 的前端来源，逗号分隔；同源部署可留空
+  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
   upload-root: ${UPLOAD_ROOT:storage/attachments}
-  upload-url-prefix: /storage/attachments
   attachment-max-size: ${ATTACHMENT_MAX_SIZE:52428800}
   attachment-allowed-extensions: ${ATTACHMENT_ALLOWED_EXTENSIONS:jpg,jpeg,png,gif,bmp,webp,doc,docx,xls,xlsx,pdf,txt,zip,rar,mp4,avi,mp3,m4a,aac,wav}
